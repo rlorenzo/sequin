@@ -1,0 +1,12 @@
+/target
+
+# never commit photos (privacy) — test data stays local
+*.jpg
+*.jpeg
+*.png
+*.heic
+arrangement.json
+sequin-output/
+
+# OS noise
+.DS_Store
