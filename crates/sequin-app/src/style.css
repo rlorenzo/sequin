@@ -1,0 +1,280 @@
+/* Sequin — "The Light Table" (see DESIGN.md).
+   Pure chroma-0 surfaces per macOS appearance; honey gold ≤10%;
+   sans for UI, mono for data; flat at rest. */
+
+:root {
+  --bg: oklch(1 0 0);
+  --surface: oklch(0.955 0 0);
+  --ink: oklch(0.19 0 0);
+  --muted: oklch(0.47 0 0);
+  --hairline: oklch(0.89 0 0);
+  --gold: oklch(0.817 0.161 75.1);
+  --gold-hover: oklch(0.775 0.155 75.1);
+  --gold-ink: oklch(0.235 0.05 75.1);
+  /* Rings/bars need ≥3:1 vs bg: deep gold in light mode, bright in dark. */
+  --accent-line: oklch(0.56 0.125 75.1);
+  --danger: oklch(0.5 0.19 27);
+
+  --sans: -apple-system, system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-6: 24px; --sp-8: 32px; --sp-9: 40px; --sp-12: 48px;
+
+  --radius: 7px;
+  --thumb-h: 176px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --z-header: 10;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.115 0 0);
+    --surface: oklch(0.165 0 0);
+    --ink: oklch(0.92 0 0);
+    --muted: oklch(0.67 0 0);
+    --hairline: oklch(0.235 0 0);
+    --gold-hover: oklch(0.85 0.155 75.1);
+    --accent-line: var(--gold);
+    --danger: oklch(0.72 0.16 25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  body { letter-spacing: 0.008em; }
+}
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- header ---------- */
+
+#app-head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-8);
+  background: var(--bg);
+  border-bottom: 1px solid var(--hairline);
+}
+
+#app-head h1 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+
+#app-head .summary {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+#app-head .spacer { flex: 1; }
+
+/* ---------- buttons ---------- */
+
+.btn {
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.btn:hover { background: var(--surface); }
+.btn:active { background: var(--hairline); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:hover { background: transparent; }
+
+.btn.primary {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gold-ink);
+  background: var(--gold);
+  border-color: transparent;
+  padding: 8px 18px;
+}
+.btn.primary:hover { background: var(--gold-hover); }
+.btn.primary:active { transform: translateY(0.5px); }
+
+:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+/* ---------- main / stage states ---------- */
+
+main { padding: var(--sp-6) var(--sp-8) 96px; }
+
+.stage {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-4);
+  padding: var(--sp-9) var(--sp-6);
+}
+
+.stage h2 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.stage .lede {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.stage .btn.primary { margin-top: var(--sp-2); }
+
+.stage .quiet {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.stage .count { margin: 0; font-size: 0.8125rem; color: var(--muted); }
+
+.stage .error {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 0.8125rem;
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- progress ---------- */
+
+.bar {
+  position: relative;
+  width: min(280px, 60vw);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--accent-line);
+  transform-origin: left;
+  transition: transform 180ms var(--ease-out);
+}
+
+.bar.indeterminate::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 2px;
+  background: var(--accent-line);
+  animation: sweep 1100ms var(--ease-out) infinite;
+}
+
+@keyframes sweep {
+  from { transform: translateX(-110%); }
+  to   { transform: translateX(280%); }
+}
+
+/* ---------- failures ---------- */
+
+.failures {
+  margin: 0 0 var(--sp-4);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.failures summary { cursor: pointer; width: fit-content; }
+.failures summary:hover { color: var(--ink); }
+.failures ul { margin: var(--sp-2) 0 0; padding-left: var(--sp-6); }
+.failures li { margin: 2px 0; overflow-wrap: anywhere; }
+.failures .mono { font-size: 0.75rem; }
+
+/* ---------- the light table ---------- */
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-9);
+}
+
+.group {
+  animation: rise 280ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 24ms);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.g-index {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.g-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.g-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.thumb {
+  height: var(--thumb-h);
+  width: auto;
+  max-width: 100%;
+  border-radius: 5px;
+  background: var(--surface);
+  object-fit: cover;
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  .bar.indeterminate::after {
+    transform: none;
+    width: 100%;
+    opacity: 0.45;
+  }
+}

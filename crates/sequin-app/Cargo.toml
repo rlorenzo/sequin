@@ -1,0 +1,20 @@
+[package]
+name = "sequin-app"
+description = "Sequin desktop GUI (Dioxus)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sequin-app"
+path = "src/main.rs"
+
+[dependencies]
+sequin-core = { path = "../sequin-core" }
+dioxus = { version = "0.7", features = ["desktop"] }
+anyhow.workspace = true
+rfd = "0.15"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+dirs = "6"
+percent-encoding = "2"

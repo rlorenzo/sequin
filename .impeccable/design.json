@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-19T22:15:00Z",
+  "title": "Design System: Sequin",
+  "extensions": {
+    "colorMeta": {
+      "honey-gold": {
+        "role": "primary",
+        "displayName": "Honey Gold",
+        "canonical": "oklch(0.817 0.161 75.1)",
+        "tonalRamp": ["oklch(0.2 0.05 75.1)", "oklch(0.32 0.08 75.1)", "oklch(0.44 0.11 75.1)", "oklch(0.56 0.125 75.1)", "oklch(0.68 0.15 75.1)", "oklch(0.817 0.161 75.1)", "oklch(0.88 0.12 75.1)", "oklch(0.95 0.06 75.1)"]
+      },
+      "accent-line": {
+        "role": "primary",
+        "displayName": "Deep Gold",
+        "canonical": "oklch(0.56 0.125 75.1)",
+        "tonalRamp": ["oklch(0.2 0.05 75.1)", "oklch(0.32 0.08 75.1)", "oklch(0.44 0.11 75.1)", "oklch(0.56 0.125 75.1)", "oklch(0.68 0.15 75.1)", "oklch(0.817 0.161 75.1)", "oklch(0.88 0.12 75.1)", "oklch(0.95 0.06 75.1)"]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Light Table",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": ["oklch(0.115 0 0)", "oklch(0.165 0 0)", "oklch(0.235 0 0)", "oklch(0.47 0 0)", "oklch(0.67 0 0)", "oklch(0.89 0 0)", "oklch(0.955 0 0)", "oklch(1 0 0)"]
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Darkroom",
+        "canonical": "oklch(0.115 0 0)",
+        "tonalRamp": ["oklch(0.115 0 0)", "oklch(0.165 0 0)", "oklch(0.235 0 0)", "oklch(0.47 0 0)", "oklch(0.67 0 0)", "oklch(0.89 0 0)", "oklch(0.955 0 0)", "oklch(1 0 0)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.19 0 0)",
+        "tonalRamp": ["oklch(0.115 0 0)", "oklch(0.19 0 0)", "oklch(0.32 0 0)", "oklch(0.47 0 0)", "oklch(0.67 0 0)", "oklch(0.8 0 0)", "oklch(0.92 0 0)", "oklch(0.97 0 0)"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Darkroom Red",
+        "canonical": "oklch(0.5 0.19 27)",
+        "tonalRamp": ["oklch(0.25 0.1 27)", "oklch(0.35 0.14 27)", "oklch(0.5 0.19 27)", "oklch(0.6 0.18 26)", "oklch(0.72 0.16 25)", "oklch(0.82 0.1 25)", "oklch(0.9 0.05 25)", "oklch(0.96 0.02 25)"]
+      }
+    },
+    "typographyMeta": {
+      "wordmark": { "displayName": "Wordmark", "purpose": "The header 'Sequin' only." },
+      "title": { "displayName": "Title", "purpose": "Stage headings; text-wrap: balance." },
+      "body": { "displayName": "Body", "purpose": "Stage prose, max 46ch, text-wrap: pretty." },
+      "label": { "displayName": "Label", "purpose": "Buttons and controls." },
+      "data": { "displayName": "Data", "purpose": "Counts, badges, filenames, errors. Mono means data; tabular-nums." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Every transition and entrance; no bounce, no elastic." },
+      { "name": "state-fast", "value": "150ms", "purpose": "Hover/background state changes." },
+      { "name": "progress", "value": "180ms", "purpose": "Determinate progress fill (transform: scaleX, never width)." },
+      { "name": "rise", "value": "280ms", "purpose": "Group-row entrance: 6px translate + fade, 24ms stagger capped at row 14." },
+      { "name": "sweep", "value": "1100ms", "purpose": "Indeterminate progress sweep." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single gold action on a screen; hover deepens, active nudges down.",
+      "html": "<button class=\"ds-btn-primary\">Open photo folder…</button>",
+      "css": ".ds-btn-primary { font-family: -apple-system, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; color: oklch(0.235 0.05 75.1); background: oklch(0.817 0.161 75.1); border: none; border-radius: 7px; padding: 8px 18px; cursor: pointer; transition: background 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: oklch(0.775 0.155 75.1); } .ds-btn-primary:active { transform: translateY(0.5px); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.56 0.125 75.1); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary action: hairline border, surface fill on hover.",
+      "html": "<button class=\"ds-btn-quiet\">Open photo folder…</button>",
+      "css": ".ds-btn-quiet { font-family: -apple-system, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; color: oklch(0.19 0 0); background: transparent; border: 1px solid oklch(0.89 0 0); border-radius: 7px; padding: 6px 14px; cursor: pointer; transition: background 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-quiet:hover { background: oklch(0.955 0 0); } .ds-btn-quiet:active { background: oklch(0.89 0 0); } .ds-btn-quiet:disabled { opacity: 0.45; cursor: default; } .ds-btn-quiet:focus-visible { outline: 2px solid oklch(0.56 0.125 75.1); outline-offset: 2px; }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": "bar",
+      "description": "3px determinate bar; fill scales via transform, paired with a mono count.",
+      "html": "<div class=\"ds-progress\"><div class=\"ds-progress-track\"><div class=\"ds-progress-fill\"></div></div><span class=\"ds-progress-count\">34 / 62</span></div>",
+      "css": ".ds-progress { display: flex; flex-direction: column; align-items: center; gap: 10px; } .ds-progress-track { width: 240px; height: 3px; border-radius: 2px; background: oklch(0.955 0 0); overflow: hidden; } .ds-progress-fill { height: 100%; width: 100%; border-radius: 2px; background: oklch(0.56 0.125 75.1); transform: scaleX(0.55); transform-origin: left; } .ds-progress-count { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: oklch(0.47 0 0); }"
+    },
+    {
+      "name": "Group Row",
+      "kind": "custom",
+      "refersTo": "group",
+      "description": "One cluster on the light table: mono index + badge line over a wrapping thumbnail row.",
+      "html": "<section class=\"ds-group\"><header class=\"ds-group-head\"><span class=\"ds-g-index\">2</span><span class=\"ds-g-meta\">3 photos · b&amp;w</span></header><div class=\"ds-g-row\"><div class=\"ds-thumb-ph\" style=\"width:117px\"></div><div class=\"ds-thumb-ph\" style=\"width:117px\"></div><div class=\"ds-thumb-ph\" style=\"width:176px\"></div></div></section>",
+      "css": ".ds-group { display: block; } .ds-group-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; } .ds-g-index { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; font-weight: 600; color: oklch(0.19 0 0); } .ds-g-meta { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; color: oklch(0.47 0 0); } .ds-g-row { display: flex; flex-wrap: wrap; gap: 8px; } .ds-thumb-ph { height: 176px; border-radius: 5px; background: linear-gradient(160deg, oklch(0.9 0 0), oklch(0.82 0 0)); }"
+    },
+    {
+      "name": "Failure Disclosure",
+      "kind": "custom",
+      "refersTo": "failures",
+      "description": "Quiet native details element listing unreadable files; never a modal.",
+      "html": "<details class=\"ds-failures\"><summary>1 file couldn’t be read</summary><ul><li><span class=\"ds-mono\">broken.jpg</span> — not an image</li></ul></details>",
+      "css": ".ds-failures { font-family: -apple-system, system-ui, sans-serif; font-size: 0.8125rem; color: oklch(0.47 0 0); } .ds-failures summary { cursor: pointer; width: fit-content; } .ds-failures summary:hover { color: oklch(0.19 0 0); } .ds-failures ul { margin: 8px 0 0; padding-left: 24px; } .ds-mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; }"
+    },
+    {
+      "name": "Error Message",
+      "kind": "custom",
+      "refersTo": "error",
+      "description": "Mono error text in darkroom red, always beside a recovery action.",
+      "html": "<p class=\"ds-error\">reading /nonexistent/delivery: No such file or directory</p>",
+      "css": ".ds-error { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; color: oklch(0.5 0.19 27); max-width: 60ch; overflow-wrap: anywhere; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Light Table",
+    "overview": "Sequin is a photographer's light table: a quiet, glowing surface where the shoot is laid out, grouped, and slid into order. The photographs are the interface — chrome recedes to near-nothing, thumbnails carry all the color and meaning, and the app's own voice appears only where the photos can't speak: counts, badges, and one honey-gold glint on the single action that matters. The app follows macOS appearance: light mode is the white light table, dark mode is the darkroom — surfaces drop to pure near-black so thumbnails glow.",
+    "keyCharacteristics": [
+      "Photos-first: every screen judged by how much of it is photograph",
+      "Dual-theme, pure chroma-0 neutral surfaces; all warmth lives in the honey-gold accent",
+      "One quiet system sans for UI; monospace strictly for data",
+      "Responsive motion (150–280ms, ease-out expo), flat at rest",
+      "WCAG 2.1 AA: contrast per theme, reduced-motion alternatives, keyboard-reachable controls"
+    ],
+    "rules": [
+      { "name": "The Ten-Percent Rule", "body": "Honey gold touches at most 10% of any screen. If gold appears on more than the primary action, the progress bar, focus rings, and (future) selection, it has leaked.", "section": "colors" },
+      { "name": "The Pure Surface Rule", "body": "Surfaces are chroma-0 in both themes. Tinted-cream or tinted-charcoal backgrounds are prohibited; the photographs supply all environmental color.", "section": "colors" },
+      { "name": "The Mono-Means-Data Rule", "body": "Monospace is reserved for values the app reads or writes. UI labels never wear it; data never wears the sans.", "section": "typography" },
+      { "name": "The Drag-Lift Rule", "body": "The only pronounced shadow this app will ever have belongs to the thing being dragged. A lifted photo or group casts a soft shadow while airborne and loses it on drop. If anything casts a shadow at rest, it is wrong.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do let thumbnails dominate: maximize photograph-per-pixel on every screen.",
+      "Do use Apple Photos' familiar grid conventions — earned familiarity over invention.",
+      "Do keep transitions 150–280ms with cubic-bezier(0.16, 1, 0.3, 1) and give every animation a prefers-reduced-motion alternative.",
+      "Do give every interactive element default, hover, focus-visible, active, and disabled states, keyboard-reachable.",
+      "Do pair every error with a recovery action."
+    ],
+    "donts": [
+      "Don't build the \"pro-app panel forest\" — no docked panels, no control walls.",
+      "Don't build the \"generic web dashboard\" — no SaaS cards, badges, or decorative shadows; nothing that reads \"website in a window\".",
+      "Don't slide into \"sterile minimalism\" — no mystery-meat icons, no unlabeled functions, no form over usability.",
+      "Don't tint the surfaces; The Pure Surface Rule stands. Warmth is honey gold's job.",
+      "Don't put bright honey gold on white for lines or text — use Deep Gold there.",
+      "Don't decorate with motion. If an animation doesn't convey state, feedback, or the single completion reward, it doesn't exist."
+    ]
+  }
+}

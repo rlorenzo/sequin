@@ -1,0 +1,19 @@
+[package]
+name = "sequin-core"
+description = "Headless core for Sequin: perceptual-hash grouping, ordering, and EXIF timestamp writing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+image.workspace = true
+rustdct.workspace = true
+little_exif.workspace = true
+rayon.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

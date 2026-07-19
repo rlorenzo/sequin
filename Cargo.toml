@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sequin-core",
+    "crates/sequin-cli",
+    "crates/sequin-app",
+]
+# sequin-app (Dioxus) needs system webview deps; build core + cli by default.
+default-members = ["crates/sequin-core", "crates/sequin-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/rlorenzo/sequin"
+
+[workspace.dependencies]
+image = "0.25"
+rustdct = "0.7"
+little_exif = "0.6"
+rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+chrono = "0.4"
