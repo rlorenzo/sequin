@@ -1,0 +1,11 @@
+# typos configuration — https://github.com/crate-ci/typos
+[default.extend-words]
+# "PNGs" in prose trips the PN→ON rule.
+PN = "PN"
+
+[files]
+extend-exclude = [
+    "fixtures/",   # UUID filenames
+    "Cargo.lock",
+    "*.json",
+]

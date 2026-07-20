@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Fast pre-commit gate: formatting, lints, and typos.
+# Tests run in CI (and locally via `cargo nextest run`), not here.
+set -euo pipefail
+
+export PATH="/opt/homebrew/opt/rustup/bin:/opt/homebrew/bin:$HOME/.cargo/bin:$PATH"
+
+echo "pre-commit: cargo fmt --check"
+cargo fmt --all --check
+
+echo "pre-commit: cargo clippy -D warnings (workspace)"
+cargo clippy --workspace --all-targets -- -D warnings
+
+if command -v typos >/dev/null 2>&1; then
+  echo "pre-commit: typos"
+  typos
+else
+  echo "pre-commit: typos not installed, skipping (brew install typos-cli)"
+fi

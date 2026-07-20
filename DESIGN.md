@@ -139,7 +139,7 @@ Dark mode adds +0.008em letter-spacing to body text to compensate for light-on-d
 Flat. Surfaces sit on one plane in both themes; light mode separates with hairlines and surface tints, dark mode with lightness steps (bg 0.115 → surface 0.165). Nothing casts a shadow at rest, and no shadow vocabulary exists yet by design.
 
 ### Named Rules
-**The Drag-Lift Rule.** The only pronounced shadow this app will ever have belongs to the thing being dragged (arriving with M3). A lifted photo or group casts a soft shadow while airborne and loses it on drop. If anything casts a shadow at rest, it is wrong.
+**The Drag-Lift Rule.** Nothing casts a shadow at rest — ever. During a drag, the "lift" is carried by the system-rendered drag ghost (the webview's native snapshot); in the layout, the source cell dims to 35% (the photo has "left the table") and the destination is drawn by a 2px gold line. The app draws no shadows of its own; if anything casts one at rest, it is wrong.
 
 ## 5. Components
 
@@ -153,8 +153,8 @@ Flat. Surfaces sit on one plane in both themes; light mode separates with hairli
 - 3px track in surface, 2px radius; determinate fill in accent-line driven by `transform: scaleX()` (never width); indeterminate variant sweeps a 40% segment at 1100ms. Reduced motion: static 45%-opacity full fill. Always paired with a mono count (`34 / 62`) and a quiet label.
 
 ### The Light Table (group rows)
-- Each cluster is a `section.group`: a baseline-aligned head (bold mono index — a real timeline position — plus muted mono badges `3 photos · b&w · bordered`) over a `flex-wrap` row of thumbnails, 8px inside, 40px between groups. No cards, no rules, no containers — proximity does the grouping.
-- Rows enter with a 280ms rise (6px translate + fade), staggered 24ms per row, capped at row 14. Reduced motion: instant.
+- Each cluster is a `section.group`: a baseline-aligned head (bold mono index — a real timeline position — plus muted mono badges `3 photos · b&w · bordered`) over a `flex-wrap` row of thumbnails, 8px inside, 36px gaps between groups (the gaps double as drop zones). No cards, no rules, no containers — proximity does the grouping.
+- No entrance choreography: the light table is an editable surface, and replayed entrances on every edit would be noise. The motion budget goes to state feedback — drag dimming, gold insertion lines, the dashed merge outline, selection rings — at 150ms ease-out.
 
 ### Thumbnails
 - 176px tall, natural aspect (locked via inline `aspect-ratio` before load — zero layout shift), 5px radius, surface-colored placeholder, `loading="lazy"`, filename in `alt` and `title`. Served from the local cache via the `/thumbs/` asset handler.

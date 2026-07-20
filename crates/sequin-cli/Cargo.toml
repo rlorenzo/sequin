@@ -1,6 +1,7 @@
 [package]
 name = "sequin-cli"
 description = "CLI for the Sequin core: group photos, preview timestamps, write EXIF"
+publish = false
 version.workspace = true
 edition.workspace = true
 license.workspace = true

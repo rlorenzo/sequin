@@ -40,6 +40,18 @@ cargo build --release      # core + cli
 ./target/release/sequin apply arrangement.json "2026-07-18 10:00" --dry-run
 ```
 
+Quality gates (all must pass before pushing; CI enforces them on macOS +
+Linux runners, and `.githooks/pre-commit` runs the fast subset — fresh
+clones must run `git config core.hooksPath .githooks` once):
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo nextest run          # or cargo test
+typos                      # brew install typos-cli
+cargo deny check           # advisories/licenses/bans; config in deny.toml
+```
+
 Golden test (run whenever touching hashing/grouping code): group the local
 test delivery and compare against `fixtures/expected_groups_archive1-2.json`
 (sorted filename sets must match EXACTLY — 34 groups from 62 photos):

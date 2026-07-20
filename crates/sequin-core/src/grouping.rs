@@ -44,12 +44,17 @@ pub fn cluster(photos: &[Photo], threshold: u32) -> Result<Vec<Group>> {
     // min(full, cropped), identical to `hashing::distance`.
     let decoded = photos
         .iter()
-        .map(|p| Ok((hash_from_hex(&p.hash_full)?, hash_from_hex(&p.hash_cropped)?)))
+        .map(|p| {
+            Ok((
+                hash_from_hex(&p.hash_full)?,
+                hash_from_hex(&p.hash_cropped)?,
+            ))
+        })
         .collect::<Result<Vec<_>>>()?;
     for i in 0..n {
         for j in (i + 1)..n {
-            let d = hamming(&decoded[i].0, &decoded[j].0)
-                .min(hamming(&decoded[i].1, &decoded[j].1));
+            let d =
+                hamming(&decoded[i].0, &decoded[j].0).min(hamming(&decoded[i].1, &decoded[j].1));
             if d <= threshold {
                 uf.union(i, j);
             }

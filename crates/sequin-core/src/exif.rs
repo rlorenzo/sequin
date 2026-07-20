@@ -28,9 +28,7 @@ pub fn write_timestamp(photo: &TimedPhoto) -> Result<()> {
     let mut metadata = match Metadata::new_from_path(path) {
         Ok(m) => m,
         Err(e) if is_no_exif_error(&e) => Metadata::new(),
-        Err(e) => {
-            return Err(e).with_context(|| format!("reading EXIF from {}", path.display()))
-        }
+        Err(e) => return Err(e).with_context(|| format!("reading EXIF from {}", path.display())),
     };
 
     let ts = photo.exif_datetime.clone();

@@ -10,6 +10,7 @@
 //! swaps) with zero false merges. Alternate crops are NOT auto-matched (pHash
 //! is not crop-tolerant) — the GUI must allow dragging strays into groups.
 
+pub mod arrange;
 pub mod exif;
 pub mod grouping;
 pub mod hashing;
@@ -20,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// One photo on disk plus its computed hashes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Photo {
     pub path: PathBuf,
     /// pHash (DCT) of the full image, 16x16 = 256 bits, hex-encoded.
@@ -34,14 +35,14 @@ pub struct Photo {
 }
 
 /// A cluster of visually-matching variants of the same shot.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Group {
     pub photos: Vec<Photo>,
 }
 
 /// The user's final arrangement: groups in timeline order, photos ordered
 /// within each group.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Arrangement {
     pub groups: Vec<Group>,
 }

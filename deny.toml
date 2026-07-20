@@ -1,0 +1,46 @@
+# cargo-deny configuration — https://embarkstudios.github.io/cargo-deny/
+# CI runs `cargo deny check` (advisories, licenses, bans, sources).
+
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+# Only flag unmaintained crates we depend on directly; the Dioxus/rfd tree
+# drags in the whole retired gtk-rs GTK3 suite transitively on Linux targets,
+# which we cannot fix from here.
+unmaintained = "workspace"
+ignore = [
+    # quick-xml < 0.41 DoS-class issues, pinned by little_exif 0.6.23 (its
+    # latest release). Sequin parses only the user's own local photos, never
+    # attacker-controlled XML. Drop these when little_exif ships with
+    # quick-xml >= 0.41.
+    { id = "RUSTSEC-2026-0194", reason = "pinned by little_exif; local-only input" },
+    { id = "RUSTSEC-2026-0195", reason = "pinned by little_exif; local-only input" },
+]
+
+[licenses]
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "NCSA", # libfuzzer-sys, transitive via the image/rav1e AV1 stack
+]
+
+[bans]
+multiple-versions = "allow" # Dioxus's tree has plenty; not worth fighting
+wildcards = "deny"
+allow-wildcard-paths = true # our own version-less path deps are fine
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

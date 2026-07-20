@@ -4320,6 +4320,7 @@ dependencies = [
  "rayon",
  "rustdct",
  "serde",
+ "serde_json",
  "tempfile",
 ]
 
