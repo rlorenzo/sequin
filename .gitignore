@@ -8,6 +8,10 @@
 arrangement.json
 sequin-output/
 
+# ...except the app's own icon assets (shippable, not photos)
+!crates/sequin-app/assets/
+!crates/sequin-app/assets/*.png
+
 # OS noise
 .DS_Store
 
