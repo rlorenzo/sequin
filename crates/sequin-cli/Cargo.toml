@@ -1,0 +1,17 @@
+[package]
+name = "sequin-cli"
+description = "CLI for the Sequin core: group photos, preview timestamps, write EXIF"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sequin"
+path = "src/main.rs"
+
+[dependencies]
+sequin-core = { path = "../sequin-core" }
+anyhow.workspace = true
+serde_json.workspace = true
+chrono.workspace = true

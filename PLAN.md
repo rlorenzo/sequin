@@ -56,7 +56,7 @@ round-trip. `cargo test` covers: bordered-variant grouping (synthetic),
 timestamp spacing, EXIF write/read round-trip. CLI reproduces the validated
 grouping of the test batch byte-for-byte against the fixture.
 
-### M2 — Thumbnail grid (GUI)
+### M2 — Thumbnail grid (GUI) (DONE, 2026-07-19)
 - Generate thumbnails (~256px JPEG) into an app cache dir
   (`dirs::cache_dir()/sequin/<hash-of-source-path>/`), parallel via rayon;
   show progress while hashing (channel from `spawn_blocking` → Signal).

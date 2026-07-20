@@ -99,16 +99,31 @@ These were derived and visually verified on a real 62-photo delivery
   minor version; 0.x API churn is real.
 - `rfd` for native folder pickers (async).
 
+## Design context
+
+Before any UI work in `sequin-app`, read `PRODUCT.md` (register: product;
+users, personality, anti-references, WCAG AA target) and `DESIGN.md` (seed
+visual system: "The Light Table" — photos-first, pure neutral surfaces per
+macOS appearance, honey-gold accent ≤10%, sans + mono-for-data type).
+Both were created with `/impeccable init`; re-run `/impeccable document`
+after M2 to capture real tokens.
+
 ## Current state / next work
 
-M1 (core pipeline) is DONE and validated. Next is M2 in PLAN.md: thumbnail
-grid grouped by cluster, then M3 drag-to-reorder (the core UX), then M4 time
-assignment + EXIF write flow. The Dioxus shell in `sequin-app/src/main.rs`
-currently only picks a folder and lists group filenames — replace its group
-list with the thumbnail grid, keeping the spawn_blocking pattern.
+M1 (core pipeline) and M2 (thumbnail grid) are DONE and validated. Next is
+M3 in PLAN.md: drag-to-reorder (the core UX), then M4 time assignment + EXIF
+write flow.
 
-## v2 ideas (do not start unless asked)
+M2 notes: `sequin-core/src/thumbs.rs` fuses hashing + thumbnailing (one
+decode per photo via `hashing::hash_photo_with_work`; ~512px JPEGs cached in
+`dirs::cache_dir()/sequin/thumbs/<dir-hash>/`; per-file failures reported,
+not fatal). The app serves thumbs via `use_asset_handler("thumbs", …)` and
+streams scan progress over a tokio channel into a `Phase` signal. Dev hook:
+`SEQUIN_OPEN=<folder> cargo run -p sequin-app` auto-opens a folder on launch
+(used for screenshot iteration). Visual system lives in `style.css` per
+DESIGN.md ("The Light Table": chroma-0 surfaces, macOS light/dark via
+`prefers-color-scheme`, honey-gold accent ≤10%, mono-for-data).
 
-CLIP-embedding outfit clustering via `ort` (color histograms were tested and
-fail — they latch onto the backdrop, not the dress), HEIC support, watch
-folders.
+v2 ideas (do not start unless asked): CLIP-embedding outfit clustering via
+`ort` (color histograms were tested and fail — they latch onto the backdrop,
+not the dress), HEIC support, watch folders.

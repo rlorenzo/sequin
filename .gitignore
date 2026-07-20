@@ -10,3 +10,7 @@ sequin-output/
 
 # OS noise
 .DS_Store
+
+# review-loop scratch artifacts
+agent-code-review.md
+agent-review-summary.md
