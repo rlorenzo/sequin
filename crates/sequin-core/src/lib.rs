@@ -10,6 +10,7 @@
 //! swaps) with zero false merges. Alternate crops are NOT auto-matched (pHash
 //! is not crop-tolerant) — the GUI must allow dragging strays into groups.
 
+pub mod apply;
 pub mod arrange;
 pub mod exif;
 pub mod grouping;

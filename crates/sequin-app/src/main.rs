@@ -9,7 +9,8 @@ use dioxus::desktop::wry::http::Response;
 use dioxus::desktop::{use_asset_handler, Config, WindowBuilder};
 use dioxus::prelude::*;
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
-use sequin_core::{arrange, grouping, thumbs, Arrangement};
+use sequin_core::timeline::{Spacing, TimedPhoto};
+use sequin_core::{apply, arrange, grouping, thumbs, timeline, Arrangement};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -84,6 +85,79 @@ enum Hover {
     Gap(usize),
     /// Onto a group as a whole (merge target for group drags).
     OnGroup(usize),
+}
+
+/// The timestamp-writing flow (M4): a modal journey over the light table.
+#[derive(Clone, PartialEq)]
+enum WriteFlow {
+    Idle,
+    Confirm,
+    Writing { done: usize, total: usize },
+    Done(WriteOutcome),
+}
+
+#[derive(Clone, PartialEq)]
+struct WriteOutcome {
+    written: usize,
+    total: usize,
+    verified: usize,
+    output_dir: Option<PathBuf>,
+    failures: Vec<(String, String)>,
+    verify_failures: Vec<(String, String)>,
+}
+
+/// Time-bar inputs and write-flow state, threaded as one `Copy` bundle.
+#[derive(Clone, Copy, PartialEq)]
+struct WriteUi {
+    flow: Signal<WriteFlow>,
+    /// `YYYY-MM-DD`, from the date input.
+    start_date: Signal<String>,
+    /// `HH:MM`, from the time input.
+    start_time: Signal<String>,
+    /// Seconds between groups / within a group, as entered.
+    gap_groups: Signal<String>,
+    gap_within: Signal<String>,
+    copy_mode: Signal<bool>,
+    /// Fires the one earned flourish on the wordmark.
+    shimmer: Signal<bool>,
+}
+
+impl WriteUi {
+    /// Parse the inputs into a start instant and spacing. `None` = invalid.
+    fn parsed(&self) -> Option<(chrono::NaiveDateTime, Spacing)> {
+        parse_write_inputs(
+            &self.start_date.read(),
+            &self.start_time.read(),
+            &self.gap_groups.read(),
+            &self.gap_within.read(),
+        )
+    }
+}
+
+/// Parse the time-bar inputs: `YYYY-MM-DD` date, `HH:MM[:SS]` time, and two
+/// gap-seconds fields (1..=86400 each). `None` = invalid.
+fn parse_write_inputs(
+    date: &str,
+    time: &str,
+    gap_groups: &str,
+    gap_within: &str,
+) -> Option<(chrono::NaiveDateTime, Spacing)> {
+    let date = chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").ok()?;
+    let time = chrono::NaiveTime::parse_from_str(time, "%H:%M")
+        .or_else(|_| chrono::NaiveTime::parse_from_str(time, "%H:%M:%S"))
+        .ok()?;
+    let between: i64 = gap_groups.trim().parse().ok()?;
+    let within: i64 = gap_within.trim().parse().ok()?;
+    if !(1..=86_400).contains(&between) || !(1..=86_400).contains(&within) {
+        return None;
+    }
+    Some((
+        date.and_time(time),
+        Spacing {
+            between_groups_secs: between,
+            within_group_secs: within,
+        },
+    ))
 }
 
 /// Ambient persistence state shown in the header.
@@ -230,6 +304,15 @@ fn app() -> Element {
         save_state: use_signal(|| SaveState::Untouched),
         announce: use_signal(String::new),
     };
+    let wui = WriteUi {
+        flow: use_signal(|| WriteFlow::Idle),
+        start_date: use_signal(String::new),
+        start_time: use_signal(|| "10:00".to_string()),
+        gap_groups: use_signal(|| "60".to_string()),
+        gap_within: use_signal(|| "10".to_string()),
+        copy_mode: use_signal(|| true),
+        shimmer: use_signal(|| false),
+    };
 
     // Serve cached thumbnails to the webview: /thumbs/<cache-key>/<file>.jpg
     // maps to <cache_root>/<cache-key>/<file>.jpg. Stateless; traversal-safe.
@@ -265,14 +348,14 @@ fn app() -> Element {
     // Dev hook: SEQUIN_OPEN=<folder> scans immediately on launch.
     use_hook(move || {
         if let Ok(dir) = std::env::var("SEQUIN_OPEN") {
-            start_scan(phase, editor, PathBuf::from(dir));
+            start_scan(phase, editor, wui, PathBuf::from(dir));
         }
     });
 
     let pick_folder = move |_| {
         spawn(async move {
             if let Some(dir) = rfd::AsyncFileDialog::new().pick_folder().await {
-                start_scan(phase, editor, dir.path().to_path_buf());
+                start_scan(phase, editor, wui, dir.path().to_path_buf());
             }
         });
     };
@@ -302,12 +385,7 @@ fn app() -> Element {
             }
         },
         Phase::Scanning { done, total } => {
-            let frac = if *total == 0 {
-                0.0
-            } else {
-                *done as f32 / *total as f32
-            };
-            let scale = format!("transform: scaleX({frac:.3})");
+            let scale = progress_scale(*done, *total);
             let count = format!("{done} / {total}");
             rsx! {
                 div { class: "stage", role: "status",
@@ -337,30 +415,407 @@ fn app() -> Element {
         }
         Phase::Ready => rsx! {
             LightTable { editor, pick_folder }
+            WriteDialog { editor, wui }
         },
     };
 
+    let has_session = matches!(current, Phase::Ready)
+        && editor
+            .session
+            .read()
+            .as_ref()
+            .is_some_and(|s| !s.arrangement.groups.is_empty());
+    let wordmark_class = if *wui.shimmer.read() { "shimmer" } else { "" };
+
     rsx! {
         style { {include_str!("style.css")} }
-        header { id: "app-head",
-            h1 { "Sequin" }
-            if let Some(text) = summary {
-                p { class: "summary mono", "{text}" }
+        div { class: "chrome",
+            header { id: "app-head",
+                h1 { class: "{wordmark_class}", "Sequin" }
+                if let Some(text) = summary {
+                    p { class: "summary mono", "{text}" }
+                }
+                match save_state {
+                    SaveState::Untouched => rsx! {},
+                    SaveState::Saved => rsx! {
+                        p { class: "save-ok mono", "saved" }
+                    },
+                    SaveState::Failed(err) => rsx! {
+                        p { class: "save-err mono", title: "{err}", "couldn’t save arrangement" }
+                    },
+                }
+                div { class: "spacer" }
+                button { class: "btn", disabled: busy, onclick: pick_folder, "Open photo folder…" }
             }
-            match save_state {
-                SaveState::Untouched => rsx! {},
-                SaveState::Saved => rsx! {
-                    p { class: "save-ok mono", "saved" }
-                },
-                SaveState::Failed(err) => rsx! {
-                    p { class: "save-err mono", title: "{err}", "couldn’t save arrangement" }
-                },
+            if has_session {
+                TimeBar { editor, wui }
             }
-            div { class: "spacer" }
-            button { class: "btn", disabled: busy, onclick: pick_folder, "Open photo folder…" }
         }
         main { {content} }
     }
+}
+
+/// The M4 time bar: shoot start, spacing, live span preview, and the
+/// session's one gold action.
+#[component]
+fn TimeBar(editor: Editor, wui: WriteUi) -> Element {
+    let mut w = wui;
+    let session = editor.session.read();
+    let Some(s) = session.as_ref() else {
+        return rsx! {};
+    };
+    let preview = wui.parsed().map(|(start, spacing)| {
+        let timed = timeline::assign_times(&s.arrangement, start, spacing);
+        match (timed.first(), timed.last()) {
+            (Some(f), Some(l)) => format!(
+                "{} → {}",
+                f.exif_datetime,
+                l.exif_datetime
+                    .strip_prefix(&f.exif_datetime[..11])
+                    .unwrap_or(&l.exif_datetime)
+            ),
+            _ => String::new(),
+        }
+    });
+    drop(session);
+    let valid = preview.is_some();
+    let preview_text = preview.unwrap_or_else(|| "enter a valid start and spacing".into());
+    let preview_class = if valid {
+        "preview mono"
+    } else {
+        "preview mono invalid"
+    };
+    let date = wui.start_date.read().clone();
+    let time = wui.start_time.read().clone();
+    let gg = wui.gap_groups.read().clone();
+    let gw = wui.gap_within.read().clone();
+
+    rsx! {
+        div { class: "timebar",
+            label { class: "tb-label", "Start" }
+            input {
+                r#type: "date",
+                class: "tb-input mono",
+                value: "{date}",
+                aria_label: "Shoot start date",
+                oninput: move |evt| w.start_date.set(evt.value()),
+            }
+            input {
+                r#type: "time",
+                class: "tb-input mono",
+                value: "{time}",
+                aria_label: "Shoot start time",
+                oninput: move |evt| w.start_time.set(evt.value()),
+            }
+            label { class: "tb-label", "Gaps" }
+            input {
+                r#type: "number",
+                class: "tb-input tb-num mono",
+                value: "{gg}",
+                min: "1",
+                max: "86400",
+                aria_label: "Seconds between groups",
+                title: "Seconds between groups",
+                oninput: move |evt| w.gap_groups.set(evt.value()),
+            }
+            input {
+                r#type: "number",
+                class: "tb-input tb-num mono",
+                value: "{gw}",
+                min: "1",
+                max: "86400",
+                aria_label: "Seconds between photos in a group",
+                title: "Seconds between photos in a group",
+                oninput: move |evt| w.gap_within.set(evt.value()),
+            }
+            span { class: "{preview_class}", "{preview_text}" }
+            div { class: "spacer" }
+            button {
+                class: "btn primary",
+                disabled: !valid,
+                onclick: move |_| w.flow.set(WriteFlow::Confirm),
+                "Write timestamps…"
+            }
+        }
+    }
+}
+
+/// Confirm → progress → done, rendered as a modal over the light table.
+#[component]
+fn WriteDialog(editor: Editor, wui: WriteUi) -> Element {
+    let mut w = wui;
+    let flow = wui.flow.read().clone();
+    if matches!(flow, WriteFlow::Idle) {
+        return rsx! {};
+    }
+
+    // Dismissal is disabled mid-write; every other state closes the same way.
+    let writing = matches!(flow, WriteFlow::Writing { .. });
+    // A verified write earns the shimmer — but the wordmark it sweeps under
+    // sits behind this dialog's overlay, so fire it on *dismiss* (header
+    // visible again), then auto-clear so it's one sweep, not a permanent line.
+    let closed_ok = matches!(
+        &flow,
+        WriteFlow::Done(o) if o.failures.is_empty() && o.verify_failures.is_empty()
+    );
+    let mut close = move || {
+        w.flow.set(WriteFlow::Idle);
+        if closed_ok {
+            w.shimmer.set(true);
+            let mut shimmer = w.shimmer;
+            spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(900)).await;
+                shimmer.set(false);
+            });
+        } else {
+            w.shimmer.set(false);
+        }
+    };
+
+    let body = match flow {
+        WriteFlow::Idle => unreachable!(),
+        WriteFlow::Confirm => {
+            let session = editor.session.read();
+            let Some(s) = session.as_ref() else {
+                return rsx! {};
+            };
+            let count = s.arrangement.photo_count();
+            let groups = s.arrangement.groups.len();
+            let span = wui.parsed().map(|(start, spacing)| {
+                let timed = timeline::assign_times(&s.arrangement, start, spacing);
+                match (timed.first(), timed.last()) {
+                    (Some(f), Some(l)) => (f.exif_datetime.clone(), l.exif_datetime.clone()),
+                    _ => (String::new(), String::new()),
+                }
+            });
+            drop(session);
+            let Some((first, last)) = span else {
+                return rsx! {};
+            };
+            let copy = *wui.copy_mode.read();
+            rsx! {
+                h2 { "Write timestamps" }
+                p { class: "mono dlg-line", "{count} photos · {groups} groups" }
+                p { class: "mono dlg-line", "{first} → {last}" }
+                label { class: "dlg-check",
+                    input {
+                        r#type: "checkbox",
+                        checked: copy,
+                        onchange: move |evt| w.copy_mode.set(evt.checked()),
+                    }
+                    span {
+                        "Copy photos into "
+                        span { class: "mono", "sequin-output/" }
+                        " — originals untouched"
+                    }
+                }
+                if !copy {
+                    p { class: "dlg-warn", "Originals will be modified in place." }
+                }
+                div { class: "dlg-actions",
+                    button { class: "btn", autofocus: true, onclick: move |_| close(), "Cancel" }
+                    button {
+                        class: "btn primary",
+                        onclick: move |_| start_write(editor, w),
+                        "Write {count} timestamps"
+                    }
+                }
+            }
+        }
+        WriteFlow::Writing { done, total } => {
+            let scale = progress_scale(done, total);
+            rsx! {
+                h2 { "Writing timestamps…" }
+                div { class: "bar dlg-bar", role: "status",
+                    div { class: "bar-fill", style: "{scale}" }
+                }
+                p { class: "mono dlg-line", "{done} / {total}" }
+            }
+        }
+        WriteFlow::Done(outcome) => {
+            let dest = outcome.output_dir.as_ref().map(|d| d.display().to_string());
+            let verify_line = if outcome.verify_failures.is_empty() {
+                format!(
+                    "verified {}",
+                    plural(outcome.verified, "read-back sample", "read-back samples")
+                )
+            } else {
+                plural(
+                    outcome.verify_failures.len(),
+                    "verification failure",
+                    "verification failures",
+                )
+            };
+            let ok = outcome.failures.is_empty() && outcome.verify_failures.is_empty();
+            let title = if ok {
+                "Timeline written."
+            } else {
+                "Written, with problems"
+            };
+            let reveal = dest.clone();
+            rsx! {
+                h2 { "{title}" }
+                p { class: "mono dlg-line",
+                    "{outcome.written} of {outcome.total} photos stamped · {verify_line}"
+                }
+                if let Some(d) = dest {
+                    p { class: "mono dlg-line dlg-dest", "{d}" }
+                }
+                if !outcome.failures.is_empty() {
+                    details { class: "failures",
+                        summary { {plural(outcome.failures.len(), "file failed", "files failed")} }
+                        ul {
+                            for (name, err) in outcome.failures.iter() {
+                                li { key: "{name}",
+                                    span { class: "mono", "{name}" }
+                                    " — {err}"
+                                }
+                            }
+                        }
+                    }
+                }
+                if !outcome.verify_failures.is_empty() {
+                    details { class: "failures",
+                        summary { "verification failures" }
+                        ul {
+                            for (name, err) in outcome.verify_failures.iter() {
+                                li { key: "{name}",
+                                    span { class: "mono", "{name}" }
+                                    " — {err}"
+                                }
+                            }
+                        }
+                    }
+                }
+                div { class: "dlg-actions",
+                    if let Some(d) = reveal {
+                        button {
+                            class: "btn",
+                            onclick: move |_| {
+                                let _ = std::process::Command::new("open").arg(&d).spawn();
+                            },
+                            "Reveal in Finder"
+                        }
+                    }
+                    button { class: "btn primary", autofocus: true, onclick: move |_| close(), "Done" }
+                }
+            }
+        }
+    };
+
+    rsx! {
+        div {
+            class: "overlay",
+            onclick: move |_| {
+                if !writing {
+                    close();
+                }
+            },
+            div {
+                class: "dialog",
+                role: "dialog",
+                aria_modal: "true",
+                aria_label: "Write timestamps",
+                onclick: move |evt| evt.stop_propagation(),
+                onkeydown: move |evt| {
+                    if evt.key() == Key::Escape && !writing {
+                        close();
+                    }
+                },
+                {body}
+            }
+        }
+    }
+}
+
+/// Kick off the actual write: assign times, then apply on a blocking thread
+/// with progress streamed back into the dialog.
+fn start_write(editor: Editor, wui: WriteUi) {
+    let mut editor = editor;
+    let mut w = wui;
+    // A double-click on the confirm button must not spawn two racing runs.
+    if matches!(*w.flow.peek(), WriteFlow::Writing { .. }) {
+        return;
+    }
+    let Some((start, spacing)) = wui.parsed() else {
+        return;
+    };
+    let (timed, folder): (Vec<TimedPhoto>, PathBuf) = {
+        let session = editor.session.read();
+        let Some(s) = session.as_ref() else { return };
+        (
+            timeline::assign_times(&s.arrangement, start, spacing),
+            s.folder.clone(),
+        )
+    };
+    let total = timed.len();
+    let dest = if *wui.copy_mode.read() {
+        apply::Destination::CopyToOutput
+    } else {
+        apply::Destination::InPlace
+    };
+    w.flow.set(WriteFlow::Writing { done: 0, total });
+
+    spawn(async move {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+        let handle = tokio::task::spawn_blocking(move || {
+            apply::apply(&timed, &folder, dest, |done, total| {
+                let _ = tx.send((done, total));
+            })
+        });
+        // Drain until the writer drops `tx` (i.e. apply returned) before
+        // reading the result: a forwarder task could otherwise replay a
+        // stale progress message after Done and wedge the dialog.
+        while let Some((done, total)) = rx.recv().await {
+            w.flow.set(WriteFlow::Writing { done, total });
+        }
+        let result = handle
+            .await
+            .map_err(|e| anyhow::anyhow!("write task failed: {e}"))
+            .and_then(|r| r);
+
+        match result {
+            Ok(report) => {
+                let outcome = WriteOutcome {
+                    written: report.written,
+                    total,
+                    verified: report.verified,
+                    output_dir: report.output_dir,
+                    failures: report
+                        .failures
+                        .into_iter()
+                        .map(|(p, e)| (file_name(&p), e))
+                        .collect(),
+                    verify_failures: report
+                        .verify_failures
+                        .into_iter()
+                        .map(|(p, e)| (file_name(&p), e))
+                        .collect(),
+                };
+                let ok = outcome.failures.is_empty() && outcome.verify_failures.is_empty();
+                editor.announce.set(format!(
+                    "Wrote {} of {} timestamps, {}",
+                    outcome.written,
+                    outcome.total,
+                    if ok { "all verified" } else { "with failures" }
+                ));
+                // Shimmer is deferred to dialog dismissal (it sweeps the
+                // header wordmark, which this dialog's overlay covers here).
+                w.flow.set(WriteFlow::Done(outcome));
+            }
+            Err(e) => {
+                editor.announce.set("Writing failed".into());
+                w.flow.set(WriteFlow::Done(WriteOutcome {
+                    written: 0,
+                    total,
+                    verified: 0,
+                    output_dir: None,
+                    failures: vec![("write".into(), format!("{e:#}"))],
+                    verify_failures: Vec::new(),
+                }));
+            }
+        }
+    });
 }
 
 /// The editable grid: groups as rows, gaps as drop zones, full keyboard map.
@@ -1174,7 +1629,7 @@ fn split_selected_photos(ed: &mut Editor) {
 
 /// Kick off the scan → cluster pipeline for one folder, streaming progress.
 /// A valid saved sidecar covering the same photo set wins over re-clustering.
-fn start_scan(mut phase: Signal<Phase>, mut editor: Editor, dir: PathBuf) {
+fn start_scan(mut phase: Signal<Phase>, mut editor: Editor, mut wui: WriteUi, dir: PathBuf) {
     let cache_dir = thumbs::cache_dir_for(&cache_root(), &dir);
     let thumb_base = format!(
         "/thumbs/{}",
@@ -1194,6 +1649,17 @@ fn start_scan(mut phase: Signal<Phase>, mut editor: Editor, dir: PathBuf) {
         SAVE_GEN.fetch_add(1, Ordering::SeqCst);
         editor.save_state.set(SaveState::Untouched);
         editor.announce.set(String::new());
+        wui.flow.set(WriteFlow::Idle);
+        wui.shimmer.set(false);
+        // Reset spacing to the validated defaults; start date/time reseed
+        // from the new delivery once the scan lands. Otherwise a previous
+        // folder's edited values carry forward silently.
+        wui.gap_groups.set("60".to_string());
+        wui.gap_within.set("10".to_string());
+        wui.start_time.set("10:00".to_string());
+        // Copy-to-output is the safe default and must not silently carry a
+        // previous folder's in-place opt-in forward.
+        wui.copy_mode.set(true);
         phase.set(Phase::Scanning { done: 0, total: 0 });
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Prog>();
 
@@ -1256,6 +1722,12 @@ fn start_scan(mut phase: Signal<Phase>, mut editor: Editor, dir: PathBuf) {
 
         match result {
             Ok(Ok((arrangement, resumed, report))) => {
+                // Seed the shoot start: first photo's mtime date at 10:00.
+                if let Some(first) = arrangement.groups.first().and_then(|g| g.photos.first()) {
+                    let start = apply::default_start(&first.path);
+                    wui.start_date.set(start.format("%Y-%m-%d").to_string());
+                    wui.start_time.set(start.format("%H:%M").to_string());
+                }
                 let is_bw = report
                     .photos
                     .iter()
@@ -1285,6 +1757,16 @@ fn file_name(path: &std::path::Path) -> String {
 
 fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
+}
+
+/// Inline style scaling a `.bar-fill` to a done/total fraction.
+fn progress_scale(done: usize, total: usize) -> String {
+    let frac = if total == 0 {
+        0.0
+    } else {
+        done as f32 / total as f32
+    };
+    format!("transform: scaleX({frac:.3})")
 }
 
 fn failure_summary(n: usize) -> String {
@@ -1372,5 +1854,33 @@ mod tests {
         assert_eq!(plural(1, "photo", "photos"), "1 photo");
         assert_eq!(plural(2, "photo", "photos"), "2 photos");
         assert_eq!(plural(0, "photo", "photos"), "0 photos");
+    }
+
+    #[test]
+    fn parse_write_inputs_accepts_valid_forms() {
+        let (start, spacing) = parse_write_inputs("2026-07-18", "10:00", "60", "10").unwrap();
+        assert_eq!(start.to_string(), "2026-07-18 10:00:00");
+        assert_eq!(spacing.between_groups_secs, 60);
+        assert_eq!(spacing.within_group_secs, 10);
+        // Seconds in the time input and whitespace around gaps are accepted.
+        let (start, _) = parse_write_inputs("2026-07-18", "10:00:30", " 60 ", "10").unwrap();
+        assert_eq!(start.to_string(), "2026-07-18 10:00:30");
+    }
+
+    #[test]
+    fn parse_write_inputs_rejects_invalid_forms() {
+        for (date, time, gg, gw) in [
+            ("", "10:00", "60", "10"),              // empty date
+            ("2026-13-01", "10:00", "60", "10"),    // impossible date
+            ("2026-07-18", "25:00", "60", "10"),    // impossible time
+            ("2026-07-18", "10:00", "0", "10"),     // gap below 1s
+            ("2026-07-18", "10:00", "60", "86401"), // gap above a day
+            ("2026-07-18", "10:00", "sixty", "10"), // non-numeric gap
+        ] {
+            assert!(
+                parse_write_inputs(date, time, gg, gw).is_none(),
+                "should reject {date} {time} {gg} {gw}"
+            );
+        }
     }
 }

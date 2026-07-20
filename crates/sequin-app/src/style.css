@@ -27,6 +27,7 @@
   --thumb-h: 176px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --z-header: 10;
+  --z-dialog: 20;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,23 +63,49 @@ html, body {
 
 /* ---------- header ---------- */
 
-#app-head {
+.chrome {
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-3) var(--sp-8);
   background: var(--bg);
   border-bottom: 1px solid var(--hairline);
 }
 
+#app-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-8);
+}
+
 #app-head h1 {
+  position: relative;
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 650;
   letter-spacing: 0.015em;
+}
+
+/* The one earned flourish: a gold glint sweeps under the wordmark when a
+   timeline lands on disk verified. Reduced motion: the underline simply
+   appears (animation is disabled globally; the ::after keeps its resting
+   full-width state). */
+#app-head h1.shimmer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  border-radius: var(--radius-bar);
+  background: var(--gold);
+  transform-origin: left;
+  animation: shimmer-sweep 800ms var(--ease-out) both;
+}
+
+@keyframes shimmer-sweep {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 #app-head .summary {
@@ -122,6 +149,106 @@ html, body {
 :focus-visible {
   outline: 2px solid var(--accent-line);
   outline-offset: 2px;
+}
+
+/* ---------- time bar (M4) ---------- */
+
+.timebar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-8) var(--sp-3);
+}
+
+.tb-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.tb-label + .tb-label,
+.tb-num + .tb-label { margin-left: var(--sp-3); }
+
+.tb-input {
+  font-size: 0.75rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-bar);
+  padding: 3px 6px;
+}
+.tb-input:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 1px;
+}
+.tb-num { width: 64px; }
+
+.timebar .preview {
+  margin-left: var(--sp-3);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.timebar .preview.invalid { color: var(--danger); }
+.timebar .spacer { flex: 1; }
+
+/* ---------- write dialog (M4) ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: oklch(0 0 0 / 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  background: var(--bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: var(--sp-6);
+  width: min(460px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dialog h2 {
+  margin: 0 0 var(--sp-3);
+  font-size: 1.0625rem;
+  font-weight: 650;
+}
+
+.dlg-line {
+  margin: 0 0 var(--sp-2);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.dlg-dest { overflow-wrap: anywhere; }
+
+.dlg-check {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-2);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.dlg-check .mono { font-size: 0.75rem; }
+
+.dlg-warn {
+  margin: 0 0 var(--sp-2);
+  font-size: 0.8125rem;
+  color: var(--danger);
+}
+
+.dlg-bar { width: 100%; margin: var(--sp-4) 0 var(--sp-2); }
+
+.dlg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
 }
 
 /* ---------- main / stage states ---------- */
