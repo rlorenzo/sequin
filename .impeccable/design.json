@@ -53,7 +53,7 @@
       { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Every transition and entrance; no bounce, no elastic." },
       { "name": "state-fast", "value": "150ms", "purpose": "Hover/background state changes." },
       { "name": "progress", "value": "180ms", "purpose": "Determinate progress fill (transform: scaleX, never width)." },
-      { "name": "rise", "value": "280ms", "purpose": "Group-row entrance: 6px translate + fade, 24ms stagger capped at row 14." },
+      { "name": "drag-feedback", "value": "150ms", "purpose": "Selection rings, insertion lines, merge outlines, drag dimming — the editable surface has no entrance choreography." },
       { "name": "sweep", "value": "1100ms", "purpose": "Indeterminate progress sweep." }
     ],
     "breakpoints": []
@@ -122,7 +122,7 @@
       { "name": "The Ten-Percent Rule", "body": "Honey gold touches at most 10% of any screen. If gold appears on more than the primary action, the progress bar, focus rings, and (future) selection, it has leaked.", "section": "colors" },
       { "name": "The Pure Surface Rule", "body": "Surfaces are chroma-0 in both themes. Tinted-cream or tinted-charcoal backgrounds are prohibited; the photographs supply all environmental color.", "section": "colors" },
       { "name": "The Mono-Means-Data Rule", "body": "Monospace is reserved for values the app reads or writes. UI labels never wear it; data never wears the sans.", "section": "typography" },
-      { "name": "The Drag-Lift Rule", "body": "The only pronounced shadow this app will ever have belongs to the thing being dragged. A lifted photo or group casts a soft shadow while airborne and loses it on drop. If anything casts a shadow at rest, it is wrong.", "section": "elevation" }
+      { "name": "The Drag-Lift Rule", "body": "Nothing casts a shadow at rest — ever. During a drag the lift is carried by the system drag ghost; the source cell dims and the destination is drawn by a 2px gold line. The app draws no shadows of its own.", "section": "elevation" }
     ],
     "dos": [
       "Do let thumbnails dominate: maximize photograph-per-pixel on every screen.",
