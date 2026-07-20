@@ -16,6 +16,7 @@ sequin-core = { path = "../sequin-core" }
 dioxus = { version = "0.7", features = ["desktop"] }
 anyhow.workspace = true
 rfd = "0.15"
-tokio = { version = "1", features = ["rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+chrono.workspace = true
 dirs = "6"
 percent-encoding = "2"

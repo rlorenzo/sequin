@@ -2,16 +2,18 @@
 //!
 //! Usage:
 //!   sequin group <dir>                          print detected groups as JSON
-//!   sequin apply <arrangement.json> <start> [--dry-run]
+//!   sequin apply <arrangement.json> <start> [--dry-run] [--in-place]
 //!                                               assign times & write EXIF
 //!     <start> format: "2026-07-18 10:00"
+//!     By default stamps copies in <folder>/sequin-output/ (folder = the
+//!     first photo's parent directory); --in-place stamps the originals.
 //!
 //! `apply` expects the JSON produced by `group` (edit the order to taste —
 //! this is exactly what the GUI will do interactively).
 
 use anyhow::{bail, Context, Result};
 use chrono::NaiveDateTime;
-use sequin_core::{exif, grouping, hashing, timeline, Arrangement};
+use sequin_core::{apply, grouping, hashing, timeline, Arrangement};
 use std::path::Path;
 
 fn main() -> Result<()> {
@@ -29,11 +31,12 @@ fn main() -> Result<()> {
                 .get(2)
                 .context("missing <start>, e.g. \"2026-07-18 10:00\"")?;
             let dry_run = args.iter().any(|a| a == "--dry-run");
-            cmd_apply(Path::new(file), start, dry_run)
+            let in_place = args.iter().any(|a| a == "--in-place");
+            cmd_apply(Path::new(file), start, dry_run, in_place)
         }
         _ => {
             eprintln!(
-                "usage: sequin group <dir> | sequin apply <arrangement.json> <start> [--dry-run]"
+                "usage: sequin group <dir> | sequin apply <arrangement.json> <start> [--dry-run] [--in-place]"
             );
             std::process::exit(2);
         }
@@ -55,7 +58,7 @@ fn cmd_group(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn cmd_apply(file: &Path, start: &str, dry_run: bool) -> Result<()> {
+fn cmd_apply(file: &Path, start: &str, dry_run: bool, in_place: bool) -> Result<()> {
     let arrangement: Arrangement = serde_json::from_reader(
         std::fs::File::open(file).with_context(|| format!("opening {}", file.display()))?,
     )?;
@@ -71,13 +74,43 @@ fn cmd_apply(file: &Path, start: &str, dry_run: bool) -> Result<()> {
         eprintln!("dry run: no files modified");
         return Ok(());
     }
-    let failures = exif::write_all(&timed);
-    if !failures.is_empty() {
-        for (p, e) in &failures {
-            eprintln!("FAILED {}: {}", p.display(), e);
-        }
-        bail!("{} of {} writes failed", failures.len(), timed.len());
+
+    let folder = timed
+        .first()
+        .and_then(|t| t.path.parent())
+        .context("arrangement contains no photos")?
+        .to_path_buf();
+    let dest = if in_place {
+        apply::Destination::InPlace
+    } else {
+        apply::Destination::CopyToOutput
+    };
+    let report = apply::apply(&timed, &folder, dest, |done, total| {
+        eprint!("\rwriting {done}/{total}");
+    })?;
+    eprintln!();
+
+    for (p, e) in &report.failures {
+        eprintln!("FAILED {}: {}", p.display(), e);
     }
-    eprintln!("wrote EXIF timestamps to {} files", timed.len());
+    for (p, e) in &report.verify_failures {
+        eprintln!("VERIFY FAILED {}: {}", p.display(), e);
+    }
+    if let Some(dir) = &report.output_dir {
+        eprintln!("stamped copies in {}", dir.display());
+    }
+    eprintln!(
+        "wrote {} of {} files, verified {} read-back sample(s)",
+        report.written,
+        timed.len(),
+        report.verified
+    );
+    if !report.failures.is_empty() || !report.verify_failures.is_empty() {
+        bail!(
+            "{} write failure(s), {} verification failure(s)",
+            report.failures.len(),
+            report.verify_failures.len()
+        );
+    }
     Ok(())
 }

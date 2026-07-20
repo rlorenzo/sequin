@@ -56,17 +56,6 @@ pub fn write_timestamp(photo: &TimedPhoto) -> Result<()> {
     written
 }
 
-/// Write timestamps for a whole arrangement. Returns paths that failed.
-pub fn write_all(timed: &[TimedPhoto]) -> Vec<(std::path::PathBuf, String)> {
-    let mut failures = Vec::new();
-    for t in timed {
-        if let Err(e) = write_timestamp(t) {
-            failures.push((t.path.clone(), format!("{e:#}")));
-        }
-    }
-    failures
-}
-
 /// Read back DateTimeOriginal (for dry-run verification and tests).
 pub fn read_datetime_original(path: &Path) -> Result<Option<String>> {
     let Ok(metadata) = Metadata::new_from_path(path) else {
@@ -121,28 +110,6 @@ mod tests {
         write_timestamp(&timed).unwrap();
 
         let read = read_datetime_original(&p).unwrap();
-        assert_eq!(read.as_deref(), Some("2026:07:18 10:00:00"));
-    }
-
-    #[test]
-    fn write_all_reports_failures_and_keeps_going() {
-        let dir = tempfile::tempdir().unwrap();
-        let good = dir.path().join("good.jpg");
-        RgbImage::from_pixel(64, 64, Rgb([90, 90, 90]))
-            .save(&good)
-            .unwrap();
-        let missing = dir.path().join("no-such-dir").join("missing.jpg");
-
-        let ts = |path: &std::path::Path| TimedPhoto {
-            path: path.to_path_buf(),
-            exif_datetime: "2026:07:18 10:00:00".to_string(),
-        };
-        // Failing photo first: the good one after it must still be written.
-        let failures = write_all(&[ts(&missing), ts(&good)]);
-
-        assert_eq!(failures.len(), 1);
-        assert_eq!(failures[0].0, missing);
-        let read = read_datetime_original(&good).unwrap();
         assert_eq!(read.as_deref(), Some("2026:07:18 10:00:00"));
     }
 }
