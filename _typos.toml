@@ -2,6 +2,8 @@
 [default.extend-words]
 # "PNGs" in prose trips the PN→ON rule.
 PN = "PN"
+# "Big Sur" (the macOS release), not a typo of "Sure".
+Sur = "Sur"
 
 [files]
 extend-exclude = [
