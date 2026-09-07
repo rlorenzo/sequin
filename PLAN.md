@@ -66,7 +66,7 @@ grouping of the test batch byte-for-byte against the fixture.
 - Show group badges: photo count, border/B&W indicators (`border_fraction`,
   mean saturation are already computed or trivial to add).
 
-### M3 — Arrangement editing (the core UX)
+### M3 — Arrangement editing (the core UX) (DONE, 2026-07-19, PR #2)
 - Drag to reorder groups (vertical); drag to reorder photos within a group
   (horizontal); drag a photo *between* groups (fixes crop/collage strays).
   HTML5 drag-and-drop works in the webview; `dioxus-sortable` exists but
@@ -76,7 +76,7 @@ grouping of the test batch byte-for-byte against the fixture.
 - Persist the arrangement to a sidecar JSON (same schema as `sequin group`
   output) so a session can be resumed; this file is also the CLI interchange.
 
-### M4 — Time assignment + EXIF write
+### M4 — Time assignment + EXIF write (DONE, 2026-07-20, PR #4)
 - Toolbar: date/time picker for shoot start (default: file mtime date at
   10:00), spacing controls with the validated defaults, live preview of the
   first/last computed timestamp.
@@ -87,18 +87,28 @@ grouping of the test batch byte-for-byte against the fixture.
 - Verify-after-write: read back `DateTimeOriginal` on a sample and confirm.
 
 ### M5 — Polish & release (in progress)
-- **DONE**: app icon (`crates/sequin-app/assets/icon.{png,icns}` — darkroom
-  tile + honey-gold sequin); `dx bundle` config in
-  `crates/sequin-app/Dioxus.toml`, validated to produce `Sequin.app` +
-  `Sequin_<version>_aarch64.dmg` (run from the workspace root:
-  `dx bundle --package sequin-app --package-types macos --package-types dmg`);
-  README rewritten with the Maccy-model pitch; `RELEASE.md` documenting the
-  sign → notarize → staple → smoke-test flow.
-- **Pending (maintainer, needs Apple Developer ID)**: code-sign with a
-  Developer ID Application cert, notarize via `notarytool`, staple. Steps in
-  RELEASE.md.
+- **DONE (PR #5, merged 2026-09-07)**: app icon
+  (`crates/sequin-app/assets/icon.{png,icns}` — darkroom tile + honey-gold
+  sequin); `dx bundle` config in `crates/sequin-app/Dioxus.toml`, validated
+  to produce `Sequin.app` + `Sequin_<version>_aarch64.dmg` (run from the
+  workspace root: `dx bundle --package sequin-app --package-types macos
+  --package-types dmg`); README rewritten with the Maccy-model pitch;
+  `RELEASE.md` documenting the sign → notarize → staple → smoke-test flow.
+- **DONE (2026-07-20, maintainer)**: code-signed with the Developer ID
+  Application cert, notarized via `notarytool` (Apple verdict `Accepted`),
+  ticket stapled to both `Sequin.app` and `Sequin_0.1.0_aarch64.dmg`;
+  `spctl` reports `Notarized Developer ID`. Notary credentials live in the
+  maintainer's login keychain as profile `sequin-notary`, so a re-run needs
+  only `--keychain-profile sequin-notary`. Steps in RELEASE.md. Builds are
+  arm64-only for now.
 - **Pending (maintainer)**: manual smoke test — full flow on a real delivery
   → import `sequin-output/` to Apple Photos → confirm timeline order.
+  Ideally against the signed, notarized build.
+- **Pending**: cut v0.1.0 — tag, GitHub release with the notarized `.dmg`
+  attached, short release notes, README screenshots.
+- **Optional**: a build/release CI workflow (`dx bundle` on `v*` tags,
+  signing gated on secret presence). A manual local release per RELEASE.md
+  is probably enough for a tool used twice a year.
 
 ### v2 candidates
 - CLIP outfit clustering (`ort` + quantized ViT-B/32, ~30–150 MB model).

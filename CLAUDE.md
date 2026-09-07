@@ -122,9 +122,22 @@ after M2 to capture real tokens.
 
 ## Current state / next work
 
-M1 (core pipeline) and M2 (thumbnail grid) are DONE and validated. Next is
-M3 in PLAN.md: drag-to-reorder (the core UX), then M4 time assignment + EXIF
-write flow.
+M1–M4 are DONE and validated: the core flow (group → arrange → write) is
+complete. M5 (polish & release) is nearly done — PR #5 merged the app icon,
+`dx bundle` config, README pitch and `RELEASE.md`, and the macOS build was
+signed + notarized once on 2026-07-20 (keychain profile `sequin-notary`).
+What remains before v0.1.0: a manual smoke test on a real delivery (arrange
+→ write → import `sequin-output/` into Apple Photos → confirm order), then
+tag `v0.1.0` and publish the notarized `.dmg` as a GitHub release. See
+PLAN.md M5.
+
+M3/M4 notes: `sequin-core/src/arrange.rs` is the arrangement model
+(reorder, merge, split; serializes to the `arrangement.json` sidecar shared
+with the CLI) and `sequin-core/src/apply.rs` is the copy-and-stamp engine
+(copy to `sequin-output/` by default, EXIF written to the copies, per-file
+failures reported; `--in-place` is an explicit opt-in). The app hosts the
+drag/keyboard editor with 100-deep undo and the confirm → progress →
+failure-report write dialog.
 
 M2 notes: `sequin-core/src/thumbs.rs` fuses hashing + thumbnailing (one
 decode per photo via `hashing::hash_photo_with_work`; ~512px JPEGs cached in
