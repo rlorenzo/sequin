@@ -86,12 +86,19 @@ grouping of the test batch byte-for-byte against the fixture.
   writing in place, preserving originals.
 - Verify-after-write: read back `DateTimeOriginal` on a sample and confirm.
 
-### M5 — Polish & release
-- App icon, DMG packaging (`dx bundle` / `cargo-bundle`), notarization.
-- README with the Maccy-model pitch: free & open source (MIT), paid
-  convenience build on the Mac App Store later if traction warrants.
-- Manual smoke test: full flow on a real delivery → import to Apple Photos →
-  timeline order correct.
+### M5 — Polish & release (in progress)
+- **DONE**: app icon (`crates/sequin-app/assets/icon.{png,icns}` — darkroom
+  tile + honey-gold sequin); `dx bundle` config in
+  `crates/sequin-app/Dioxus.toml`, validated to produce `Sequin.app` +
+  `Sequin_<version>_aarch64.dmg` (run from the workspace root:
+  `dx bundle --package sequin-app --package-types macos --package-types dmg`);
+  README rewritten with the Maccy-model pitch; `RELEASE.md` documenting the
+  sign → notarize → staple → smoke-test flow.
+- **Pending (maintainer, needs Apple Developer ID)**: code-sign with a
+  Developer ID Application cert, notarize via `notarytool`, staple. Steps in
+  RELEASE.md.
+- **Pending (maintainer)**: manual smoke test — full flow on a real delivery
+  → import `sequin-output/` to Apple Photos → confirm timeline order.
 
 ### v2 candidates
 - CLIP outfit clustering (`ort` + quantized ViT-B/32, ~30–150 MB model).

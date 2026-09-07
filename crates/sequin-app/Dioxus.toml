@@ -1,0 +1,28 @@
+# Dioxus bundle configuration for `dx bundle` (macOS .app / .dmg).
+# See RELEASE.md for the full signed-and-notarized build steps.
+
+[application]
+name = "Sequin"
+
+[bundle]
+identifier = "dev.rlorenzo.sequin"
+publisher = "Rex Lorenzo"
+copyright = "© 2026 Rex Lorenzo. MIT-licensed."
+category = "Photography"
+short_description = "Put your photoshoot back in order."
+long_description = """
+Sequin fixes studio photo deliveries before Apple Photos import: it groups the
+styled variants of each shot by perceptual hashing, lets you drag groups and
+photos into shoot order, and writes sequential EXIF capture times so the batch
+imports in the right order on the timeline.
+"""
+icon = ["assets/icon.icns", "assets/icon.png"]
+
+[bundle.macos]
+# The .app / menu-bar name (the crate is `sequin-app`; the product is Sequin).
+bundle_name = "Sequin"
+# Webview (WKWebView) requires macOS 11 Big Sur or newer.
+minimum_system_version = "11.0"
+# Signing identity and notarization are supplied at release time via env /
+# CLI, never committed. See RELEASE.md.
+hardened_runtime = true
