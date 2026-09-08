@@ -16,6 +16,16 @@ repository = "https://github.com/rlorenzo/sequin"
 
 [workspace.dependencies]
 image = "0.25"
+# Scaled (DCT-domain) JPEG decoding, which image 0.25's zune-jpeg backend does
+# not expose. Same maintainers as `image` (image-rs). `default-features =
+# false` drops its optional rayon dependency, which keeps a second global
+# rayon pool out of the build -- it does NOT make the decoder serial. Without
+# the feature jpeg-decoder uses its mpsc worker, which spawns one OS thread
+# per colour component, outside the bounded scan pool. Enabling `rayon`
+# instead would fold that work into whichever pool is installed (i.e. ours),
+# but it invalidates the decode measurements recorded in CLAUDE.md, so it
+# needs re-measuring on the 24MP corpus first.
+jpeg-decoder = { version = "0.3", default-features = false }
 rustdct = "0.7"
 little_exif = "0.6"
 rayon = "1.10"
