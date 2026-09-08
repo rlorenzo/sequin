@@ -145,9 +145,44 @@ decode per photo via `hashing::hash_photo_with_work`; ~512px JPEGs cached in
 not fatal). The app serves thumbs via `use_asset_handler("thumbs", …)` and
 streams scan progress over a tokio channel into a `Phase` signal. Dev hook:
 `SEQUIN_OPEN=<folder> cargo run -p sequin-app` auto-opens a folder on launch
-(used for screenshot iteration). Visual system lives in `style.css` per
-DESIGN.md ("The Light Table": chroma-0 surfaces, macOS light/dark via
-`prefers-color-scheme`, honey-gold accent ≤10%, mono-for-data).
+(used for screenshot iteration).
+
+Scan cost (both knobs measured on 62 synthetic 24MP JPEGs):
+- **Bounded pool.** Scans run on a rayon pool capped at 4 workers
+  (`hashing::scan_threads`); peak RSS scales linearly with concurrent decodes,
+  so 10 threads cost 1209 MB / 3.00 s vs 498 MB / 3.25 s at 4. Override with
+  `SEQUIN_SCAN_THREADS=<n>`. Scheduling only — never changes hash values.
+- **Scaled JPEG decode — ON by default; `SEQUIN_FULL_DECODE=1` restores the
+  original path.** `hashing::decode_jpeg_scaled` uses
+  `jpeg-decoder`'s reduced IDCT to decode straight to ~`WORK_SIZE` (a 24MP
+  frame at 1/4 = ~4.5 MB, not 72 MB); `image`'s zune-jpeg backend has no
+  scaling API. PNG, CMYK and 16-bit greyscale fall back to the full decode.
+  Net at 4 threads on 62×24MP: baseline JPEG **499 MB / 3.75 s →
+  111 MB / 1.26 s**, progressive JPEG **770 MB / 5.21 s → 373 MB / 3.72 s**.
+  Progressive must buffer every coefficient before the IDCT, so it saves
+  less — size the thread cap against that number, not the baseline one.
+  ⚠️ A reduced IDCT is a different reconstruction, so it **changes hash
+  values** (measured drift on synthetic 24MP scenes: max 12 bits of 256,
+  mean 3-5; grouping and reported dimensions unchanged). The risk this
+  creates is a **false split**, not a false merge: the ≥102 gap to the
+  nearest false pair is wide, but invariant 4 only records that true
+  variants land ≤60 — it never says how close to 60 the worst real pair
+  sits. A pair at 55 plus 12 bits of drift is a group that silently breaks
+  apart. The fixture stores filenames only, so that headroom cannot be
+  measured without the photos, and the 32-bit ceiling in
+  `scaled_jpeg_decode_matches_the_full_decode` is a "decode went wrong"
+  guard, NOT a grouping-safety bound. **This ships enabled on a bet that
+  has not been cashed — settle it before v0.1.0:** group `Archive1-2` twice,
+  once plain and once with `SEQUIN_FULL_DECODE=1`, and confirm BOTH runs
+  reproduce `fixtures/expected_groups_archive1-2.json` exactly (34 groups,
+  62 photos). If they match, invariant 1 is re-validated for the scaled
+  reconstruction. If they do not, set `SEQUIN_FULL_DECODE=1` (or flip the
+  default back in `hashing::scaled_decode_enabled`, a one-line change) and
+  the drift needs a real fix before release.
+
+Visual system lives in `style.css` per DESIGN.md ("The Light Table": chroma-0
+surfaces, macOS light/dark via `prefers-color-scheme`, honey-gold accent
+≤10%, mono-for-data).
 
 v2 ideas (do not start unless asked): CLIP-embedding outfit clustering via
 `ort` (color histograms were tested and fail — they latch onto the backdrop,

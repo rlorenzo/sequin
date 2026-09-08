@@ -80,14 +80,16 @@ pub fn scan_dir_with_thumbs(
     let paths = hashing::list_photo_paths(dir)?;
     let total = paths.len();
     let done = AtomicUsize::new(0);
-    let results: Vec<(PathBuf, Result<Scanned>)> = paths
-        .par_iter()
-        .map(|p| {
-            let r = scan_one(p, cache_dir);
-            progress(done.fetch_add(1, Ordering::Relaxed) + 1, total);
-            (p.clone(), r)
-        })
-        .collect();
+    let results: Vec<(PathBuf, Result<Scanned>)> = hashing::with_scan_pool(|| {
+        paths
+            .par_iter()
+            .map(|p| {
+                let r = scan_one(p, cache_dir);
+                progress(done.fetch_add(1, Ordering::Relaxed) + 1, total);
+                (p.clone(), r)
+            })
+            .collect()
+    })?;
 
     let mut photos = Vec::new();
     let mut failures = Vec::new();
@@ -105,7 +107,7 @@ fn scan_one(path: &Path, cache_dir: &Path) -> Result<Scanned> {
     let is_bw = mean_saturation(&work) < BW_SATURATION_THRESHOLD;
     let thumb = thumb_path(cache_dir, path);
     if !thumb_is_fresh(&thumb, path) {
-        write_thumb(&work, &thumb)
+        write_thumb(work, &thumb)
             .with_context(|| format!("writing thumbnail for {}", path.display()))?;
     }
     Ok(Scanned {
@@ -122,9 +124,9 @@ fn thumb_is_fresh(thumb: &Path, source: &Path) -> bool {
     matches!((mtime(thumb), mtime(source)), (Some(t), Some(s)) if t >= s)
 }
 
-fn write_thumb(work: &RgbImage, dest: &Path) -> Result<()> {
+fn write_thumb(work: RgbImage, dest: &Path) -> Result<()> {
     let (w, h) = work.dimensions();
-    let img = image::DynamicImage::ImageRgb8(work.clone());
+    let img = image::DynamicImage::ImageRgb8(work);
     let img = if w.max(h) > THUMB_MAX_DIM {
         img.resize(THUMB_MAX_DIM, THUMB_MAX_DIM, FilterType::Lanczos3)
     } else {
