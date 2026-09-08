@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Fast pre-commit gate: formatting, lints, and typos.
-# Tests run in CI (and locally via `cargo nextest run`), not here.
+# Fast pre-commit gate: formatting, lints, typos, and the golden-check
+# doctests. Rust tests run in CI (and locally via `cargo nextest run`),
+# not here.
 set -euo pipefail
 
 export PATH="/opt/homebrew/opt/rustup/bin:/opt/homebrew/bin:$HOME/.cargo/bin:$PATH"
@@ -10,6 +11,9 @@ cargo fmt --all --check
 
 echo "pre-commit: cargo clippy -D warnings (workspace)"
 cargo clippy --workspace --all-targets -- -D warnings
+
+echo "pre-commit: golden_check.py doctests"
+python3 -m doctest scripts/golden_check.py
 
 if command -v typos >/dev/null 2>&1; then
   echo "pre-commit: typos"

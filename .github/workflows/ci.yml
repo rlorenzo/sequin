@@ -31,6 +31,8 @@ jobs:
           tool: nextest
       - name: tests
         run: cargo nextest run --workspace
+      - name: golden_check.py doctests
+        run: python3 -m doctest scripts/golden_check.py
 
   typos:
     name: typos

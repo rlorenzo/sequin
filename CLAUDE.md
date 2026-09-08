@@ -49,15 +49,23 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo nextest run          # or cargo test
 typos                      # brew install typos-cli
+python3 -m doctest scripts/golden_check.py   # golden-check self-test
 cargo deny check           # advisories/licenses/bans; config in deny.toml
 ```
 
 Golden test (run whenever touching hashing/grouping code): group the local
 test delivery and compare against `fixtures/expected_groups_archive1-2.json`
-(sorted filename sets must match EXACTLY — 34 groups from 62 photos):
+(sorted filename sets must match EXACTLY — 34 groups from 62 photos). The
+photos live only on Rex's Mac; the folder is currently `~/Downloads/Archive1`
+(the fixture name still carries the older `Archive1-2` spelling):
 
 ```sh
-./target/release/sequin group ~/Downloads/Archive1-2   # photos live only on Rex's Mac
+./target/release/sequin group ~/Downloads/Archive1 > /tmp/actual.json
+python3 scripts/golden_check.py /tmp/actual.json      # pass/fail + group-set diff
+
+# Anything touching the decode path must pass BOTH ways:
+SEQUIN_FULL_DECODE=1 ./target/release/sequin group ~/Downloads/Archive1 > /tmp/full.json
+python3 scripts/golden_check.py /tmp/full.json
 ```
 
 ## Validated invariants — do NOT change without re-running the golden test
@@ -74,8 +82,14 @@ These were derived and visually verified on a real 62-photo delivery
    back in.
 3. **Two hashes per photo** (full frame + uniform-border-trimmed copy);
    pairwise distance = min of the two.
-4. **Cluster threshold 60/256** (union-find over pairs). Real-photo band:
-   true variants ≤ 60, nearest false pair ≥ 102.
+4. **Cluster threshold 60/256** (union-find over pairs). Real-photo band,
+   re-measured on the 62-photo delivery 2026-09-08 with the current Rust
+   code: **worst true-variant pair 34, nearest false pair 82** — 26 bits of
+   headroom below the threshold, 22 above. Identical on both decode paths.
+   (This file previously recorded "≥ 102" for the false pair; that figure
+   came from the Python prototype and does not match what the Rust
+   implementation measures. 82 is still a wide separation — the point of the
+   invariant — but use the measured number.)
 5. **Known limitation**: pHash does not match alternate crops or collage
    composites — the GUI must let users drag strays into groups manually.
    This is by design, not a bug to fix in the hasher.
@@ -127,9 +141,11 @@ complete. M5 (polish & release) is nearly done — PR #5 merged the app icon,
 `dx bundle` config, README pitch and `RELEASE.md`, and the macOS build was
 signed + notarized once on 2026-07-20 (keychain profile `sequin-notary`).
 What remains before v0.1.0: a manual smoke test on a real delivery (arrange
-→ write → import `sequin-output/` into Apple Photos → confirm order), then
-tag `v0.1.0` and publish the notarized `.dmg` as a GitHub release. See
-PLAN.md M5.
+→ write → import `sequin-output/` into Apple Photos → confirm order), a
+rebuild + re-sign + re-notarize (the July `.dmg` is no longer on disk), then
+tag `v0.1.0` and publish the notarized `.dmg` as a GitHub release. The
+scaled-decode golden test that gated this is **done** (2026-09-08, both
+paths pass). See PLAN.md M5.
 
 M3/M4 notes: `sequin-core/src/arrange.rs` is the arrangement model
 (reorder, merge, split; serializes to the `arrangement.json` sidecar shared
@@ -161,24 +177,22 @@ Scan cost (both knobs measured on 62 synthetic 24MP JPEGs):
   111 MB / 1.26 s**, progressive JPEG **770 MB / 5.21 s → 373 MB / 3.72 s**.
   Progressive must buffer every coefficient before the IDCT, so it saves
   less — size the thread cap against that number, not the baseline one.
-  ⚠️ A reduced IDCT is a different reconstruction, so it **changes hash
-  values** (measured drift on synthetic 24MP scenes: max 12 bits of 256,
-  mean 3-5; grouping and reported dimensions unchanged). The risk this
-  creates is a **false split**, not a false merge: the ≥102 gap to the
-  nearest false pair is wide, but invariant 4 only records that true
-  variants land ≤60 — it never says how close to 60 the worst real pair
-  sits. A pair at 55 plus 12 bits of drift is a group that silently breaks
-  apart. The fixture stores filenames only, so that headroom cannot be
-  measured without the photos, and the 32-bit ceiling in
-  `scaled_jpeg_decode_matches_the_full_decode` is a "decode went wrong"
-  guard, NOT a grouping-safety bound. **This ships enabled on a bet that
-  has not been cashed — settle it before v0.1.0:** group `Archive1-2` twice,
-  once plain and once with `SEQUIN_FULL_DECODE=1`, and confirm BOTH runs
-  reproduce `fixtures/expected_groups_archive1-2.json` exactly (34 groups,
-  62 photos). If they match, invariant 1 is re-validated for the scaled
-  reconstruction. If they do not, set `SEQUIN_FULL_DECODE=1` (or flip the
-  default back in `hashing::scaled_decode_enabled`, a one-line change) and
-  the drift needs a real fix before release.
+  ✅ **Validated on real photos 2026-09-08** — the golden test passes on
+  BOTH paths (34 groups / 62 photos each), and the distance bands come out
+  byte-identical: worst true-variant pair 34, nearest false pair 82. Real
+  drift between the paths is max 4 bits of 256 (mean 0.4) on `hash_full`,
+  an order of magnitude under the 12 bits measured synthetically —
+  synthetic scenes are the pessimistic case, as invariant 5's note warns.
+  The theoretical risk was a **false split** (a true variant near 60 pushed
+  over by drift); with the worst real pair at 34 there are 26 bits of
+  headroom, so it does not arise. Re-run both ways after any decode change;
+  `SEQUIN_FULL_DECODE=1` remains the rollback.
+  ⚠️ One known sensitivity: border-trim is not stable across
+  reconstructions. On one photo the trim removed 32.3% of area scaled vs
+  24.2% full, moving `hash_cropped` by 90 bits. Harmless — that photo's
+  `hash_full` is byte-identical on both paths (0 bits) and grouping takes
+  `min(full, cropped)`, so the full-frame hash carries the match — but if
+  border-trim logic is ever revisited, this is where it shows.
 
 Visual system lives in `style.css` per DESIGN.md ("The Light Table": chroma-0
 surfaces, macOS light/dark via `prefers-color-scheme`, honey-gold accent

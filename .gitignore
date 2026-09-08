@@ -15,6 +15,9 @@ sequin-output/
 # OS noise
 .DS_Store
 
+# doctest byte-cache from scripts/golden_check.py
+__pycache__/
+
 # review-loop scratch artifacts
 agent-code-review.md
 agent-review-summary.md
