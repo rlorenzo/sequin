@@ -163,9 +163,15 @@ Scan cost (both knobs measured on 62 synthetic 24MP JPEGs):
   less — size the thread cap against that number, not the baseline one.
   ⚠️ A reduced IDCT is a different reconstruction, so it **changes hash
   values** (measured drift on synthetic 24MP scenes: max 12 bits of 256,
-  mean 3-5; grouping and reported dimensions unchanged). That is well inside
-  the real-photo margin (variants ≤60, nearest false pair ≥102), but
-  synthetic drift is not the golden test. **This ships enabled on a bet that
+  mean 3-5; grouping and reported dimensions unchanged). The risk this
+  creates is a **false split**, not a false merge: the ≥102 gap to the
+  nearest false pair is wide, but invariant 4 only records that true
+  variants land ≤60 — it never says how close to 60 the worst real pair
+  sits. A pair at 55 plus 12 bits of drift is a group that silently breaks
+  apart. The fixture stores filenames only, so that headroom cannot be
+  measured without the photos, and the 32-bit ceiling in
+  `scaled_jpeg_decode_matches_the_full_decode` is a "decode went wrong"
+  guard, NOT a grouping-safety bound. **This ships enabled on a bet that
   has not been cashed — settle it before v0.1.0:** group `Archive1-2` twice,
   once plain and once with `SEQUIN_FULL_DECODE=1`, and confirm BOTH runs
   reproduce `fixtures/expected_groups_archive1-2.json` exactly (34 groups,
