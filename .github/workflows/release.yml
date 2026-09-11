@@ -24,8 +24,10 @@ env:
 jobs:
   build:
     name: build · sign · notarize (macOS)
-    # macos-14 is Apple Silicon, so this produces the aarch64 build shipped
-    # in July. Intel/universal is an open decision (PLAN.md M5).
+    # macos-14 is Apple Silicon. The signing path below builds BOTH slices
+    # and lipos them into one universal binary, so the released artifact runs
+    # natively on Apple Silicon and on Intel. The unsigned fallback is
+    # host-arch only -- it is for testing the build, not for distribution.
     runs-on: macos-14
     # Gates the signing secrets behind required reviewers -- anyone able to
     # push a v* tag can otherwise aim the Developer ID key at whatever that
@@ -80,7 +82,21 @@ jobs:
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07-16
         with:
           toolchain: stable
+          # The second slice of the universal binary. The runner is Apple
+          # Silicon, so aarch64 is already installed and x86_64 is the
+          # cross-compile -- it works because every dependency is pure Rust
+          # or a system framework the macOS SDK ships fat. CI checks that
+          # claim on every PR (ci.yml), not for the first time at tag time.
+          targets: x86_64-apple-darwin
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          # rust-cache keys on {job, platform, arch, rust-env, deps} -- no
+          # target triple. Cross-compiling moves artifacts from target/ into
+          # target/<triple>/, which the restored cache never held, but the key
+          # still matches, so it reports "up-to-date" and saves nothing: both
+          # slices would recompile cold on every release, forever. Bump the
+          # key so the per-triple dirs get their own entry.
+          key: universal
 
       - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
@@ -233,6 +249,7 @@ jobs:
 
           (umask 077; printf '%s' "$NOTARY_KEY_P8" > "$NOTARY_P8")
 
+          UNIVERSAL=1 \
           SIGN_IDENTITY="$MACOS_SIGN_IDENTITY" \
           NOTARY_KEY="$NOTARY_P8" \
           NOTARY_KEY_ID="$NOTARY_KEY_ID" \

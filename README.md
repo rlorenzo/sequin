@@ -45,7 +45,8 @@ Packaging and notarization (M5) are in progress; see [PLAN.md](PLAN.md).
 
 ## Install / run
 
-macOS 11 (Big Sur) or newer.
+macOS 11 (Big Sur) or newer, Apple Silicon or Intel — the release build is
+a universal binary, so neither needs Rosetta.
 
 ```sh
 git clone https://github.com/rlorenzo/sequin

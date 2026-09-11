@@ -20,6 +20,10 @@ sequin-output/
 *.cer
 *.keychain-db
 
+# graphify's local analysis cache -- machine-specific, large, regenerated on
+# demand. (boost's .boost/ is excluded per-clone in .git/info/exclude.)
+graphify-out/
+
 # OS noise
 .DS_Store
 

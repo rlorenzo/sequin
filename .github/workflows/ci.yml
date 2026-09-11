@@ -21,11 +21,30 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+          # The release build is universal, so x86_64 is a cross-compile from
+          # this Apple Silicon runner. Install it here too -- see the check
+          # below.
+          targets: x86_64-apple-darwin
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          # rust-cache keys on {job, platform, arch, rust-env, deps} -- no
+          # target triple -- so the cross-target artifacts below land in a
+          # target/<triple>/ dir the restored cache never held while the key
+          # still matches, and nothing gets saved. Bump the key once so they
+          # are actually cached instead of recompiling cold on every PR.
+          key: cross
       - name: rustfmt
         run: cargo fmt --all --check
       - name: clippy (workspace, deny warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings
+      # The x86_64 slice of the universal release build is otherwise compiled
+      # for the first time during a tagged release, with the Developer ID key
+      # already unlocked -- the same failure mode the dx pin and the shellcheck
+      # job exist to prevent. A dependency that does not cross-compile fails
+      # here, on the PR that introduced it. check, not build: this is about
+      # whether the target compiles at all, and the release job does the rest.
+      - name: check the x86_64 slice cross-compiles
+        run: cargo check -p sequin-app --target x86_64-apple-darwin
       - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
           tool: nextest

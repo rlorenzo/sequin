@@ -108,11 +108,32 @@ NOTARY_PROFILE=sequin-notary \
 
 It builds the `.app`, signs it, packages the **signed** app into
 `target/dx/Sequin_<version>_<arch>.dmg`, notarizes, staples and verifies.
-Useful switches: `SKIP_BUILD=1` to reuse an existing bundle, `SKIP_NOTARIZE=1`
-to stop after packaging.
+Useful switches: `UNIVERSAL=1` for a fat arm64 + x86_64 binary (what CI
+ships), `SKIP_BUILD=1` to reuse an existing bundle, `SKIP_NOTARIZE=1` to stop
+after packaging.
 
 Steps 1–4 below are what that script automates, kept as the reference for
 debugging a failure or signing by hand.
+
+### Universal binaries
+
+`dx` has `--target` but no universal mode, and it writes every target to the
+**same** bundle path, so a second build clobbers the first. `UNIVERSAL=1`
+works around that: build arm64, keep a copy, let the x86_64 build take the
+bundle path, then `lipo` the saved slices back in.
+
+Order matters for the same reason it does with the DMG — `lipo` runs
+**before** `codesign`, because fattening a signed binary invalidates its
+signature.
+
+The DMG is named for the architectures the binary actually contains, read
+back with `lipo`, so a thin build cannot ship under a `_universal` filename
+no matter which flags were passed. With `UNIVERSAL=1` the script additionally
+refuses to continue unless both slices are there.
+
+Troubleshooting: forcing the "wrong" slice on your own machine (`arch -x86_64
+…`) invokes Rosetta and triggers macOS's Rosetta-deprecation warning. That is
+an artifact of forcing it — macOS picks the native slice on its own.
 
 ## 1. Build the app bundle (unsigned)
 
