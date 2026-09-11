@@ -249,16 +249,86 @@ brew install librsvg      # one-time; provides rsvg-convert
 
 `./scripts/make_icon.sh --check` re-renders and compares against the
 committed files without writing anything — run it before tagging, so a master
-edited without a rebuild fails here rather than shipping. It is deliberately
-not a CI gate: a runner on a different cairo can differ in antialiasing
-without anything being wrong.
+edited without a rebuild fails here rather than shipping. It covers everything
+rsvg renders reproducibly: `icon.icns`, `icon.png` and the layered icon's layer
+PNGs. It cannot cover `Assets.car` (see below). It is deliberately not a CI
+gate: a runner on a different cairo can differ in antialiasing without anything
+being wrong.
 
 Geometry and colour are DESIGN.md ["6. App Icon"](DESIGN.md); the masters are
-the only place they are written down twice, and `make_icon.sh` checks the half
-it can (both masters must carry the same body path). The one trap worth
+the only place they are written down again, and `make_icon.sh` checks the halves
+it can — both flat masters must carry the same body path, and the flat and
+layered masters must use the same four disc colours. The one trap worth
 repeating here: the masters carry **sRGB hex, not `oklch()`**, because librsvg
 does not parse `oklch()` and silently drops the fill — an oklch master
 rasterises to an empty black squircle.
+
+## The macOS 26 icon
+
+macOS 26 renders app icons live from a layered Icon Composer document instead
+of a flat `.icns`. Sequin ships both: `Assets.car` for macOS 26, `icon.icns`
+for macOS 11–25. Nothing is lost on older systems, and nothing needs a second
+design.
+
+Sources:
+
+| Path | What |
+|---|---|
+| `crates/sequin-app/assets/Sequin.icon` | the Icon Composer document (`icon.json` + layer PNGs) |
+| `crates/sequin-app/assets/icon-src/layers/*.svg` | vector sources the layer PNGs are rasterised from |
+| `crates/sequin-app/assets/Assets.car` | compiled catalogue, **committed** |
+| `crates/sequin-app/assets/Assets.car.inputs` | digest of what that catalogue was compiled from |
+
+`Assets.car` is committed rather than built at release time. `actool` is not
+reproducible — it stamps a build timestamp and per-rendition UUIDs, so two
+compiles of identical input differ by a few hundred bytes — and DESIGN.md wants
+a human to check a redraw against all seven renditions before it ships. So the
+catalogue is checked in like any other reviewed artwork. (The release workflow
+also runs on `macos-14`, which has no Xcode 26 and therefore no `.icon`
+support, but that is the lesser reason: bumping the runner would not make the
+output reproducible.)
+
+That non-determinism costs nothing in practice — git's delta compression
+absorbs a no-op rebuild in well under a kilobyte. Budget roughly 0.7–1.2 MB of
+permanent clone weight per genuine redraw.
+
+Because the catalogue itself cannot be diffed, `make_icon.sh` stamps a digest
+of its *inputs* — `icon.json` plus the layer PNGs — into `Assets.car.inputs`,
+and `--check` compares against that. It catches the case that would otherwise
+ship silently: layers edited and committed on a machine without Xcode 26,
+leaving a catalogue that still renders the previous icon.
+
+`./scripts/make_icon.sh` rebuilds it on a machine that does have Xcode 26, and
+refuses up front if that Xcode is older than 26 rather than failing partway
+through the compile. `sign_notarize.sh` only copies the catalogue into the
+bundle and sets `CFBundleIconName`, which needs nothing but `plutil`.
+
+That copy happens **before** `codesign` — adding a resource or editing
+`Info.plist` afterwards breaks the seal, the same way fusing architecture
+slices into a signed binary does.
+
+`CFBundleIconName` must match the `--app-icon` argument `make_icon.sh` passes
+to `actool`. Both scripts derive that word from the `.icon` document's own
+filename, so renaming `Sequin.icon` renames both and they cannot drift. If they
+ever did, macOS 26 would silently fall back to the `.icns`.
+
+`--check` verifies the layer PNGs against their SVG masters but *not*
+`Assets.car`, which `cmp` cannot test. If you edit a layer master, rebuild on a
+machine with Xcode 26 — running `make_icon.sh` anywhere else fails up front
+rather than leaving PNGs and catalogue out of step.
+
+To preview a change across the appearance variants macOS can impose — the gold
+ramp collapses to one tone in Mono and Tinted, so the disc separations are
+carrying the mark alone there:
+
+```sh
+ICTOOL="/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool"
+for r in Default Dark ClearLight ClearDark TintedLight TintedDark Mono; do
+  "$ICTOOL" crates/sequin-app/assets/Sequin.icon --export-image \
+    --output-file "/tmp/sequin-$r.png" --platform macOS --rendition "$r" \
+    --width 512 --height 512 --scale 1
+done
+```
 
 ## Mac App Store (later, optional)
 

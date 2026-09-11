@@ -1,0 +1,8 @@
+{
+  "fill" : { "solid" : "srgb:0.019608,0.019608,0.019608,1.000000" },
+  "groups" : [
+    { "layers" : [ { "image-name" : "sequins-back.png" } ] },
+    { "layers" : [ { "image-name" : "sequin-front.png" } ] }
+  ],
+  "supported-platforms" : { "circles" : [ "watchOS" ], "squares" : [ "iOS", "macOS" ] }
+}
