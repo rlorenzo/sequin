@@ -34,6 +34,47 @@ jobs:
       - name: golden_check.py doctests
         run: python3 -m doctest scripts/golden_check.py
 
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The release path is shell, so it gets the same static gate the Rust
+      # gets: a typo in sign_notarize.sh would otherwise only surface mid-tag.
+      # shellcheck is preinstalled on the ubuntu runner image.
+      - name: shellcheck
+        run: shellcheck packaging/macos/*.sh .githooks/pre-commit
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The release workflow is mostly embedded shell -- a preflight guard, a
+      # secret check, a signing block -- and the shellcheck job above only
+      # sees standalone .sh files. actionlint parses the workflow AND runs
+      # shellcheck over every `run:` body, so a quoting slip fails here
+      # instead of mid-tag with the Developer ID key already unlocked.
+      #
+      # Pinned release + checksum for the same reason create-dmg is
+      # (release.yml): this runs in the release path's blast radius.
+      # Recompute when bumping -- upstream publishes checksums:
+      #   curl -fsSL ".../v${VERSION}/actionlint_${VERSION}_checksums.txt"
+      - name: Install actionlint
+        run: |
+          set -euo pipefail
+          VERSION="1.7.12"
+          SHA256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+          curl -fsSL -o "$RUNNER_TEMP/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
+          echo "${SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | shasum -a 256 -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      # shellcheck is preinstalled on the ubuntu image; actionlint picks it
+      # up from PATH and uses it for the `run:` bodies.
+      - name: actionlint
+        run: actionlint -no-color -oneline
+
   typos:
     name: typos
     runs-on: ubuntu-latest

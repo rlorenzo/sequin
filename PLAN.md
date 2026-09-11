@@ -106,9 +106,13 @@ grouping of the test batch byte-for-byte against the fixture.
   Ideally against the signed, notarized build.
 - **Pending**: cut v0.1.0 — tag, GitHub release with the notarized `.dmg`
   attached, short release notes, README screenshots.
-- **Optional**: a build/release CI workflow (`dx bundle` on `v*` tags,
-  signing gated on secret presence). A manual local release per RELEASE.md
-  is probably enough for a tool used twice a year.
+- **DONE**: build/release CI workflow — `.github/workflows/release.yml`
+  builds, signs, notarizes, staples and verifies on `v*` tags, then attaches
+  the `.dmg` to a draft release. Signing is gated on secret presence, so a
+  fork or an unconfigured dispatch falls back to an unsigned artifact. Both
+  CI and a local release call the same `packaging/macos/sign_notarize.sh`,
+  so the two cannot drift. Six repo secrets are still to be configured —
+  see RELEASE.md, "Releasing from a tag (CI)".
 
 ### v2 candidates
 - CLIP outfit clustering (`ort` + quantized ViT-B/32, ~30–150 MB model).
