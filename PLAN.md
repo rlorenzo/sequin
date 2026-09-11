@@ -99,8 +99,8 @@ grouping of the test batch byte-for-byte against the fixture.
   ticket stapled to both `Sequin.app` and `Sequin_0.1.0_aarch64.dmg`;
   `spctl` reports `Notarized Developer ID`. Notary credentials live in the
   maintainer's login keychain as profile `sequin-notary`, so a re-run needs
-  only `--keychain-profile sequin-notary`. Steps in RELEASE.md. Builds are
-  arm64-only for now.
+  only `--keychain-profile sequin-notary`. Steps in RELEASE.md. That July
+  build was arm64-only; the universal build below supersedes it.
 - **Pending (maintainer)**: manual smoke test — full flow on a real delivery
   → import `sequin-output/` to Apple Photos → confirm timeline order.
   Ideally against the signed, notarized build.
@@ -111,8 +111,16 @@ grouping of the test batch byte-for-byte against the fixture.
   the `.dmg` to a draft release. Signing is gated on secret presence, so a
   fork or an unconfigured dispatch falls back to an unsigned artifact. Both
   CI and a local release call the same `packaging/macos/sign_notarize.sh`,
-  so the two cannot drift. Six repo secrets are still to be configured —
-  see RELEASE.md, "Releasing from a tag (CI)".
+  so the two cannot drift. The six secrets are configured, environment-scoped
+  to `release`; see RELEASE.md, "Releasing from a tag (CI)".
+- **DONE (local), unverified in CI**: universal binaries — the release
+  script builds arm64 + x86_64 and `lipo`s them into one artifact,
+  `Sequin_<version>_universal.dmg`, so Intel Macs are no longer excluded and
+  neither architecture needs Rosetta. Validated by a local universal build;
+  CI runs the same script but has never executed the cross-compile,
+  `create-dmg` over a fat app, or notarization of a fat binary — the v0.1.0
+  tag is the first real exercise. `cargo check` for x86_64 now runs on every
+  PR so a dependency that will not cross-compile fails there, not mid-tag.
 
 ### v2 candidates
 - CLIP outfit clustering (`ort` + quantized ViT-B/32, ~30–150 MB model).
