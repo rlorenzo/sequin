@@ -49,6 +49,8 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo nextest run          # or cargo test
 typos                      # brew install typos-cli
+shellcheck packaging/macos/*.sh .githooks/pre-commit
+actionlint                 # workflow YAML + shellcheck over `run:` blocks
 python3 -m doctest scripts/golden_check.py   # golden-check self-test
 cargo deny check           # advisories/licenses/bans; config in deny.toml
 ```

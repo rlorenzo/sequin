@@ -12,6 +12,14 @@ sequin-output/
 !crates/sequin-app/assets/
 !crates/sequin-app/assets/*.png
 
+# Signing key material. Nothing here should ever be committed, and an
+# accidental `git add -A` from a Downloads-adjacent working copy is exactly
+# how it would happen.
+*.p8
+*.p12
+*.cer
+*.keychain-db
+
 # OS noise
 .DS_Store
 
