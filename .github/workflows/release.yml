@@ -14,6 +14,12 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # Pinned to the version used locally: CLAUDE.md pins the Dioxus minor
+  # version because 0.x API churn is real, and the bundler is part of that
+  # surface. Declared once because the installer and the check below have to
+  # agree -- a verify step reading its expectation from a second copy of the
+  # literal verifies only that someone edited both.
+  DX_VERSION: "0.7.9"
 
 jobs:
   build:
@@ -79,11 +85,51 @@ jobs:
       - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
           tool: cargo-binstall
+
       - name: Install dioxus-cli
-        # Pinned to the version used locally: CLAUDE.md pins the Dioxus minor
-        # version because 0.x API churn is real, and the bundler is part of
-        # that surface.
-        run: cargo binstall --no-confirm --force dioxus-cli@0.7.9
+        # GITHUB_TOKEN is not optional here. cargo-binstall resolves the
+        # prebuilt binary through api.github.com, and unauthenticated calls
+        # share one heavily-throttled quota per runner IP -- it 403s, backs
+        # off 120s, retries, and eventually gives up ("Timeout reached while
+        # checking fetcher"). With the token the job gets its own quota.
+        #
+        # The fallback keeps a GitHub API outage from failing a release:
+        # `cargo install` compiles from crates.io and touches no GitHub API,
+        # just slowly. --locked so it builds the versions dioxus published.
+        #
+        # No --force on purpose: rust-cache caches $CARGO_HOME/bin as well as
+        # the registry (cache-bin defaults to true), so on a cache hit binstall
+        # finds dx next to .crates.toml and skips the download outright.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! cargo binstall --no-confirm "dioxus-cli@${DX_VERSION}"; then
+            echo "::warning::cargo-binstall failed; falling back to cargo install (slower)."
+            cargo install dioxus-cli --version "$DX_VERSION" --locked
+          fi
+
+      # A separate step because the install above has a do-nothing path: when
+      # rust-cache restores a dx into $CARGO_HOME/bin, binstall exits happily
+      # without checking what it found, so a stale or truncated cached binary
+      # reaches the bundle step -- which fails far less legibly, and by then
+      # the Developer ID key is unlocked. Assert the pin here instead.
+      - name: Verify dx
+        run: |
+          set -euo pipefail
+          installed="$(dx --version)"
+          echo "$installed"
+          # Match the version as a whole token. A bare substring test would
+          # also accept 0.7.90 and 0.7.9-rc.1, which is the opposite of what
+          # a pin is for. dx prints "dioxus 0.7.9 (3e43ffa)", so the version
+          # is followed by a space or ends the string.
+          case "$installed" in
+            "dioxus $DX_VERSION "*|"dioxus $DX_VERSION") ;;
+            *)
+              echo "::error::expected dx $DX_VERSION, got: $installed"
+              exit 1
+              ;;
+          esac
 
       # Secrets cannot be referenced in `if:`, so turn "can we sign?" into an
       # output. All six are required, and the three states are kept distinct
