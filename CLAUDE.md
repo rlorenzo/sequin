@@ -49,7 +49,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo nextest run          # or cargo test
 typos                      # brew install typos-cli
-shellcheck packaging/macos/*.sh .githooks/pre-commit
+shellcheck packaging/macos/*.sh scripts/*.sh .githooks/pre-commit
 actionlint                 # workflow YAML + shellcheck over `run:` blocks
 python3 -m doctest scripts/golden_check.py   # golden-check self-test
 cargo deny check           # advisories/licenses/bans; config in deny.toml
@@ -126,6 +126,14 @@ These were derived and visually verified on a real 62-photo delivery
   `tokio::task::spawn_blocking` for heavy work off the UI thread. Pin the
   minor version; 0.x API churn is real.
 - `rfd` for native folder pickers (async).
+- `librsvg` (`rsvg-convert`, used by `scripts/make_icon.sh`) does **not** parse
+  CSS `oklch()` — it drops the fill silently, so an oklch-coloured SVG
+  rasterises to an empty shape. The icon masters in
+  `crates/sequin-app/assets/icon-src/` therefore carry sRGB hex with the
+  DESIGN.md token in a comment above each fill. Touching a master means
+  re-running `./scripts/make_icon.sh`; `--check` verifies the committed
+  `icon.icns`/`icon.png` still match (local/release-time only, not CI —
+  antialiasing varies with the cairo version).
 
 ## Design context
 

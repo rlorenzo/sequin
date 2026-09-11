@@ -162,7 +162,41 @@ Flat. Surfaces sit on one plane in both themes; light mode separates with hairli
 ### Failure Disclosure
 - A native `<details>` above the grid: muted summary ("2 files couldn't be read"), mono filenames with reasons inside. Never a modal, never a toast.
 
-## 6. Do's and Don'ts
+## 6. App Icon
+
+**"The Sewn Row."** Four gold sequins overlapping left to right, the way sequins
+are actually sewn onto a garment, the frontmost one carrying the thread hole.
+The overlap is the variant grouping; the left-to-right march is the sequencing;
+the sequin is the name. It states the job rather than punning on the word.
+
+Sources are vector, in `crates/sequin-app/assets/icon-src/`. Two masters are
+drawn by hand — `icon-detail.svg` (4 discs, hairline separations) for 128pt and
+up, `icon-small.svg` (3 discs, fat separations, proportionally larger hole) for
+16pt and 32pt. Rebuild both `icon.png` and `icon.icns` with
+`./scripts/make_icon.sh`; see RELEASE.md for the geometry and the librsvg
+colour-space trap.
+
+- **Body:** Apple's continuous-curvature superellipse (n=5) at r=412 on a 1024
+  canvas — the 824×824 body with 100px padding the macOS template expects.
+  Corners are transparent, never a filled black square.
+- **Ground:** `bg-dark` oklch(0.115 0 0) = `#050505`, chroma 0 in both
+  appearances. The icon does not follow the system appearance; one mark.
+- **Discs:** a lightness ramp up the same hue (75.1) landing on `honey-gold`
+  oklch(0.817 0.161 75.1) = `#FFB22C` at the front. Flat fills only.
+
+### Named Rules
+**The Flat Mark Rule.** The icon obeys the same physics as the app: no bloom,
+no specular gloss, no gradient inside a disc, no shadow at rest. Depth comes
+from overlap and the lightness ramp, exactly as elevation elsewhere comes from
+lightness steps. The mark this replaced broke all four, and read as a vinyl
+record.
+
+**The Two-Master Rule.** Small sizes are drawn, never downscaled. If a change
+to the detail master is not mirrored in the small master, 16px and 32px are
+wrong — the previous icon shipped a `sips` downscale and dissolved to a
+featureless blob below 64px.
+
+## 7. Do's and Don'ts
 
 ### Do:
 - **Do** let thumbnails dominate: maximize photograph-per-pixel on every screen.

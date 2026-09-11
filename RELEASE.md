@@ -9,8 +9,8 @@ maintainer.
 - macOS 11+ with Xcode command-line tools (`xcode-select --install`).
 - The Dioxus CLI: `cargo binstall dioxus-cli` (or `cargo install dioxus-cli`).
 - Bundle metadata lives in `crates/sequin-app/Dioxus.toml`; the app icon is
-  `crates/sequin-app/assets/icon.icns` (regenerate from `icon.png` with
-  `iconutil` — see [Regenerating the icon](#regenerating-the-icon)).
+  `crates/sequin-app/assets/icon.icns`, built from the SVG masters in
+  `assets/icon-src/` — see [Regenerating the icon](#regenerating-the-icon).
 
 The order matters: **the app must be signed before the DMG is created**, and
 the DMG is notarized last. `dx bundle` builds the DMG from the `.app` at
@@ -226,20 +226,39 @@ On a real delivery (a **copy** — in-place mode writes real EXIF):
 
 ## Regenerating the icon
 
-The icon is generated from a script (kept out of the repo; see the
-`make_icon.py` used during M5). To rebuild the `.icns` from a 1024×1024
-`icon.png`:
+The mark is "The Sewn Row" — four overlapping gold sequins, the frontmost one
+carrying the thread hole. The sources are vector and live in the repo at
+`crates/sequin-app/assets/icon-src/`:
+
+| Master | Artwork | Used for |
+|---|---|---|
+| `icon-detail.svg` | 4 discs, hairline separations, thread hole | 128pt and up |
+| `icon-small.svg` | 3 discs, fat separations, larger thread hole | 16pt and 32pt |
+
+Two masters rather than one, because the detail master's four discs turn to
+mud below ~64px. **Do not rebuild the small sizes by downscaling the 1024
+PNG** — that is what the previous icon did, and it is why the old 16px and
+32px renders were a featureless blob.
+
+Both `icon.png` and `icon.icns` are generated:
 
 ```sh
-mkdir sequin.iconset
-for sz in 16 32 128 256; do
-  sips -z $sz $sz         icon.png --out sequin.iconset/icon_${sz}x${sz}.png
-  sips -z $((sz*2)) $((sz*2)) icon.png --out sequin.iconset/icon_${sz}x${sz}@2x.png
-done
-sips -z 512 512 icon.png --out sequin.iconset/icon_512x512.png
-cp icon.png sequin.iconset/icon_512x512@2x.png   # already 1024×1024
-iconutil -c icns sequin.iconset -o crates/sequin-app/assets/icon.icns
+brew install librsvg      # one-time; provides rsvg-convert
+./scripts/make_icon.sh
 ```
+
+`./scripts/make_icon.sh --check` re-renders and compares against the
+committed files without writing anything — run it before tagging, so a master
+edited without a rebuild fails here rather than shipping. It is deliberately
+not a CI gate: a runner on a different cairo can differ in antialiasing
+without anything being wrong.
+
+Geometry and colour are DESIGN.md ["6. App Icon"](DESIGN.md); the masters are
+the only place they are written down twice, and `make_icon.sh` checks the half
+it can (both masters must carry the same body path). The one trap worth
+repeating here: the masters carry **sRGB hex, not `oklch()`**, because librsvg
+does not parse `oklch()` and silently drops the fill — an oklch master
+rasterises to an empty black squircle.
 
 ## Mac App Store (later, optional)
 

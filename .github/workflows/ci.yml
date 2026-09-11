@@ -62,7 +62,7 @@ jobs:
       # gets: a typo in sign_notarize.sh would otherwise only surface mid-tag.
       # shellcheck is preinstalled on the ubuntu runner image.
       - name: shellcheck
-        run: shellcheck packaging/macos/*.sh .githooks/pre-commit
+        run: shellcheck packaging/macos/*.sh scripts/*.sh .githooks/pre-commit
 
   actionlint:
     name: actionlint

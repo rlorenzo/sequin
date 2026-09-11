@@ -17,7 +17,7 @@ python3 -m doctest scripts/golden_check.py
 
 if command -v shellcheck >/dev/null 2>&1; then
   echo "pre-commit: shellcheck"
-  shellcheck packaging/macos/*.sh .githooks/pre-commit
+  shellcheck packaging/macos/*.sh scripts/*.sh .githooks/pre-commit
 else
   echo "pre-commit: shellcheck not installed, skipping (brew install shellcheck)"
 fi
