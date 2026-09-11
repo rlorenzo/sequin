@@ -36,12 +36,22 @@ step() { printf '\n==> %s\n' "$*"; }
 fuse_slices() {
   local from="$1" into="$2" thin rel
   while IFS= read -r -d '' thin; do
+    # `lipo -info` IS the Mach-O test, so no permission or name filter is
+    # needed -- and none is wanted. Filtering on -perm -a+x would skip a
+    # dylib shipped 0644, which the signing pass (matching on *.dylib)
+    # still signs: the bundle would then be signed everywhere but fused
+    # only where the executable bit happened to be set, and ship thin
+    # libraries inside an app advertised as universal.
     lipo -info "$thin" >/dev/null 2>&1 || continue
     rel="${thin#"$into"/}"
+    [ -f "$from/$rel" ] || die "no arm64 counterpart for $rel"
     echo "  fusing: $rel"
     lipo -create "$from/$rel" "$thin" -output "$thin.universal"
     mv "$thin.universal" "$thin"
-  done < <(find "$into/Contents" -type f -perm -a+x -print0)
+    # Fusing silently producing one slice would defeat the point.
+    lipo "$thin" -verify_arch arm64 x86_64 \
+      || die "$rel is not universal after fusing: $(lipo -archs "$thin")"
+  done < <(find "$into/Contents" -type f -print0)
 }
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."   # workspace root; dx resolves from here
