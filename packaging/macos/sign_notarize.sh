@@ -139,6 +139,32 @@ echo "  slices: $archs"
 
 DMG_PATH="${DMG_PATH:-target/dx/Sequin_${VERSION}_${ARCH}.dmg}"
 
+# 1b. Install the macOS 26 layered icon. Must happen BEFORE signing: adding a
+# resource or editing Info.plist after codesign breaks the seal, exactly as
+# fusing slices into a signed binary would.
+#
+# Assets.car is committed (built by scripts/make_icon.sh on a machine with
+# Xcode 26) rather than compiled here: actool is not reproducible, and a redraw
+# is signed off by a human against all seven renditions before it lands. The
+# .icns stays in the bundle for macOS 11-25; macOS 26 prefers CFBundleIconName
+# and the catalogue.
+#
+# A missing catalogue is fatal, not a warning. It is a committed file at a fixed
+# path and this script cd'd to the workspace root, so absence means a broken
+# checkout -- and the defect it would ship is invisible short of booting macOS
+# 26, recoverable only by re-tagging.
+step "Installing the layered (Liquid Glass) icon"
+icon_doc="crates/sequin-app/assets/Sequin.icon"
+cp "crates/sequin-app/assets/Assets.car" "$APP_PATH/Contents/Resources/Assets.car" \
+  || die "could not install Assets.car -- rebuild it with scripts/make_icon.sh on a machine with Xcode 26"
+# CFBundleIconName must name the asset inside the catalogue, which is what
+# make_icon.sh passes to actool as --app-icon. Both derive it from the .icon
+# document's filename so the two cannot drift apart.
+icon_name="$(basename "$icon_doc" .icon)"
+plutil -replace CFBundleIconName -string "$icon_name" "$APP_PATH/Contents/Info.plist" \
+  || die "could not set CFBundleIconName in $APP_PATH/Contents/Info.plist"
+echo "  Assets.car + CFBundleIconName=$icon_name"
+
 # 2. Sign inner Mach-O first, then the outer bundle. Apple deprecated
 # --deep for production signing because it can sign nested code in the
 # wrong order and skip items it does not recognize. `find -depth` is what

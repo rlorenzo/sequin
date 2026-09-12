@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Front layer master: the leading sequin, carrying the thread hole.
+       Hand-drawn, like the flat masters beside it; make_icon.sh only rasterises
+       it, to Sequin.icon/Assets/sequin-front.png. Geometry and fill are the same
+       numbers as icon-detail.svg — that pairing is prose, so keep them in step
+       by hand. See DESIGN.md "6. App Icon".
+
+       The hole is real transparency, never paint in the ground colour: a layered
+       icon composites over whatever ground the system picks per appearance, so a
+       hole "drawn" in #050505 would show as a black scar in the tinted and clear
+       renditions. Unlike the back layer's bites, this hole sits wholly inside its
+       disc, so fill-rule would in fact express it — it uses a mask anyway, to
+       stay one construction with the layer it ships next to.
+
+       Fill is sRGB hex because librsvg silently drops `oklch()`; the DESIGN.md
+       token it was converted from is in the comment above it. -->
+  <defs>
+    <mask id="hole" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect width="1024" height="1024" fill="white"/>
+      <circle cx="706.5" cy="466" r="34" fill="black"/>
+    </mask>
+  </defs>
+  <!-- oklch(0.817 0.161 75.1) -->
+  <circle cx="702.5" cy="512" r="132" fill="#FFB22C" mask="url(#hole)"/>
+</svg>

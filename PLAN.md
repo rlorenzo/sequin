@@ -88,8 +88,9 @@ grouping of the test batch byte-for-byte against the fixture.
 
 ### M5 — Polish & release (in progress)
 - **DONE (PR #5, merged 2026-09-07)**: app icon
-  (`crates/sequin-app/assets/icon.{png,icns}` — darkroom tile + honey-gold
-  sequin); `dx bundle` config in `crates/sequin-app/Dioxus.toml`, validated
+  (`crates/sequin-app/assets/icon.{png,icns}` — since redrawn as "The Sewn
+  Row"; see DESIGN.md "6. App Icon"); `dx bundle` config in
+  `crates/sequin-app/Dioxus.toml`, validated
   to produce `Sequin.app` + `Sequin_<version>_aarch64.dmg` (run from the
   workspace root: `dx bundle --package sequin-app --package-types macos
   --package-types dmg`); README rewritten with the Maccy-model pitch;

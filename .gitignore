@@ -8,9 +8,13 @@
 arrangement.json
 sequin-output/
 
-# ...except the app's own icon assets (shippable, not photos)
-!crates/sequin-app/assets/
-!crates/sequin-app/assets/*.png
+# ...except the app's own icon artwork (shippable, not photos). Named path by
+# path on purpose. A `**` glob here would re-include every PNG anywhere under
+# assets/, which would quietly turn the ban above into a suggestion -- a
+# screenshot or a test frame dropped in an assets subdirectory would sail
+# through `git add -A`. These two lines are the only PNGs the build needs.
+!crates/sequin-app/assets/icon.png
+!crates/sequin-app/assets/Sequin.icon/Assets/*.png
 
 # Signing key material. Nothing here should ever be committed, and an
 # accidental `git add -A` from a Downloads-adjacent working copy is exactly

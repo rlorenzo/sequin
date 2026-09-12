@@ -49,7 +49,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo nextest run          # or cargo test
 typos                      # brew install typos-cli
-shellcheck packaging/macos/*.sh .githooks/pre-commit
+shellcheck packaging/macos/*.sh scripts/*.sh .githooks/pre-commit
 actionlint                 # workflow YAML + shellcheck over `run:` blocks
 python3 -m doctest scripts/golden_check.py   # golden-check self-test
 cargo deny check           # advisories/licenses/bans; config in deny.toml
@@ -126,6 +126,26 @@ These were derived and visually verified on a real 62-photo delivery
   `tokio::task::spawn_blocking` for heavy work off the UI thread. Pin the
   minor version; 0.x API churn is real.
 - `rfd` for native folder pickers (async).
+- Icon Composer's renderer (CoreSVG) **ignores `fill-rule`** and fills each
+  subpath independently, so an SVG layer cannot express subtraction. Use an
+  SVG `<mask>`; even-odd is wrong anyway when the knockout extends past the
+  shape it cuts. The layered icon's PNGs are rasterised from masked SVGs in
+  `assets/icon-src/layers/`.
+- `Assets.car` (the macOS 26 layered icon) is **committed**, not built in CI:
+  `actool` output is not reproducible (build timestamp + per-rendition UUIDs),
+  and the release runner is `macos-14`, which has no Xcode 26 anyway. Because
+  the catalogue cannot be diffed, `make_icon.sh --check` compares a digest of
+  its inputs kept in `Assets.car.inputs`. `sign_notarize.sh` only copies it in
+  and sets `CFBundleIconName`, before signing — a resource added after
+  `codesign` breaks the seal.
+- `librsvg` (`rsvg-convert`, used by `scripts/make_icon.sh`) does **not** parse
+  CSS `oklch()` — it drops the fill silently, so an oklch-coloured SVG
+  rasterises to an empty shape. The icon masters in
+  `crates/sequin-app/assets/icon-src/` therefore carry sRGB hex with the
+  DESIGN.md token in a comment above each fill. Touching a master means
+  re-running `./scripts/make_icon.sh`; `--check` verifies the committed
+  `icon.icns`/`icon.png` still match (local/release-time only, not CI —
+  antialiasing varies with the cairo version).
 
 ## Design context
 

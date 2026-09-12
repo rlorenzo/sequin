@@ -162,7 +162,73 @@ Flat. Surfaces sit on one plane in both themes; light mode separates with hairli
 ### Failure Disclosure
 - A native `<details>` above the grid: muted summary ("2 files couldn't be read"), mono filenames with reasons inside. Never a modal, never a toast.
 
-## 6. Do's and Don'ts
+## 6. App Icon
+
+**"The Sewn Row."** Four gold sequins overlapping left to right, the way sequins
+are actually sewn onto a garment, the frontmost one carrying the thread hole.
+The overlap is the variant grouping; the left-to-right march is the sequencing;
+the sequin is the name. It states the job rather than punning on the word.
+
+Sources are vector, in `crates/sequin-app/assets/icon-src/`. Two flat masters are
+drawn by hand — `icon-detail.svg` (4 discs, hairline separations) for 128pt and
+up, `icon-small.svg` (3 discs, fat separations, proportionally larger hole) for
+16pt and 32pt. Rebuild both `icon.png` and `icon.icns` with
+`./scripts/make_icon.sh`; see RELEASE.md for the geometry and the librsvg
+colour-space trap.
+
+- **Body:** Apple's continuous-curvature superellipse (n=5) at r=412 on a 1024
+  canvas — the 824×824 body with 100px padding the macOS template expects.
+  Corners are transparent, never a filled black square.
+- **Ground:** `bg-dark` oklch(0.115 0 0) = `#050505`, chroma 0 in both
+  appearances. The icon does not follow the system appearance; one mark.
+- **Discs:** a lightness ramp up the same hue (75.1) landing on `honey-gold`
+  oklch(0.817 0.161 75.1) = `#FFB22C` at the front. Flat fills only.
+
+### macOS 26 (Liquid Glass)
+
+The same mark ships a second time as a layered Icon Composer document,
+`crates/sequin-app/assets/Sequin.icon`, which macOS 26 renders live with its
+own material, lighting and appearance variants. Two groups, back to front:
+
+1. `sequins-back.png` — the three trailing sequins
+2. `sequin-front.png` — the leading sequin with the thread hole
+
+**Separations must be transparency, not paint.** In the flat `.icns` the gaps
+between discs are drawn by painting the ground colour. A layered icon
+composites over whatever ground the system picks per appearance, so the same
+trick would show as a black scar in the tinted and clear renditions. The layer
+PNGs therefore carry real alpha where the discs are cut apart, and the cuts are
+made with an SVG mask — `fill-rule` cannot express the back layer's bites,
+because each knockout circle extends past the disc it cuts and even-odd fills
+the overhang. The front layer's thread hole sits wholly inside its disc and
+would survive even-odd; it uses a mask anyway, so both layers read as one
+construction.
+
+This is why the mark survives the renditions it cannot control: in Mono and
+Tinted the gold ramp collapses to a single tone, and the only thing still
+separating four discs is the geometry. Verify a redraw against every rendition
+with `ictool` before shipping it — Default, Dark, ClearLight, ClearDark,
+TintedLight, TintedDark, Mono.
+
+The flat `.icns` stays for macOS 11–25; `Assets.car` serves macOS 26.
+
+### Named Rules
+**The Flat Mark Rule.** The icon obeys the same physics as the app: no bloom,
+no specular gloss, no gradient inside a disc, no shadow at rest. Depth comes
+from overlap and the lightness ramp, exactly as elevation elsewhere comes from
+lightness steps. The mark this replaced broke all four, and read as a vinyl
+record.
+
+**The Transparent Separation Rule.** In any layered form of the mark, a gap
+between two sequins is absence, never a shape painted the colour of the ground.
+The system chooses the ground; the mark does not get to assume it.
+
+**The Two-Master Rule.** Small sizes are drawn, never downscaled. If a change
+to the detail master is not mirrored in the small master, 16px and 32px are
+wrong — the previous icon shipped a `sips` downscale and dissolved to a
+featureless blob below 64px.
+
+## 7. Do's and Don'ts
 
 ### Do:
 - **Do** let thumbnails dominate: maximize photograph-per-pixel on every screen.
