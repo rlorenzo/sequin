@@ -86,7 +86,7 @@ grouping of the test batch byte-for-byte against the fixture.
   writing in place, preserving originals.
 - Verify-after-write: read back `DateTimeOriginal` on a sample and confirm.
 
-### M5 — Polish & release (in progress)
+### M5 — Polish & release (complete; draft release awaiting publish)
 - **DONE (PR #5, merged 2026-09-07)**: app icon
   (`crates/sequin-app/assets/icon.{png,icns}` — since redrawn as "The Sewn
   Row"; see DESIGN.md "6. App Icon"); `dx bundle` config in
@@ -102,11 +102,28 @@ grouping of the test batch byte-for-byte against the fixture.
   maintainer's login keychain as profile `sequin-notary`, so a re-run needs
   only `--keychain-profile sequin-notary`. Steps in RELEASE.md. That July
   build was arm64-only; the universal build below supersedes it.
-- **Pending (maintainer)**: manual smoke test — full flow on a real delivery
-  → import `sequin-output/` to Apple Photos → confirm timeline order.
-  Ideally against the signed, notarized build.
-- **Pending**: cut v0.1.0 — tag, GitHub release with the notarized `.dmg`
-  attached, short release notes, README screenshots.
+- **DONE (2026-09-11, maintainer)**: manual smoke test — 62 photos on a copy
+  of a real delivery: 34 groups, group order preserved with no interleaving,
+  spacing exactly 10s within / 60s between, originals byte-identical
+  afterwards. Run against the arm64 build; **pending re-verification** on the
+  universal build that carries the new icon (see below).
+- **DONE (2026-09-12)**: new app icon — "The Sewn Row" (PR #19; PR #18 was
+  closed and its commit landed through #19). Replaces the glossy disc, which
+  dissolved to a featureless blob below 64px because the `.icns` was a `sips`
+  downscale with no artwork drawn for the small sizes. Two hand-drawn masters
+  now, plus a layered Icon Composer document so macOS 26 renders it as Liquid
+  Glass; the flat `.icns` still serves macOS 11–25. `scripts/make_icon.sh`
+  rebuilds everything and `--check` catches drift. See DESIGN.md "6. App Icon".
+- **DONE (2026-09-12)**: cut v0.1.0 — tagged at `e543bdd` and pushed, which
+  drove `release.yml` through build → sign → notarize (Apple `Accepted`) →
+  staple → verify, attaching `Sequin_0.1.0_universal.dmg` (30.5 MB) to a
+  **draft** release. The tag previously sat at `ab85bf1`, before the icon work;
+  it was moved and the older draft deleted, neither having ever been published.
+- **Pending (maintainer)**: publish the draft — one click, after a smoke test
+  of *this* build and a look at the icon in Finder/Dock (the first real bundle
+  to carry `Assets.car`, so the first chance to confirm macOS 26 uses the
+  layered icon rather than falling back to the `.icns`). README screenshots
+  still outstanding.
 - **DONE**: build/release CI workflow — `.github/workflows/release.yml`
   builds, signs, notarizes, staples and verifies on `v*` tags, then attaches
   the `.dmg` to a draft release. Signing is gated on secret presence, so a
@@ -114,13 +131,13 @@ grouping of the test batch byte-for-byte against the fixture.
   CI and a local release call the same `packaging/macos/sign_notarize.sh`,
   so the two cannot drift. The six secrets are configured, environment-scoped
   to `release`; see RELEASE.md, "Releasing from a tag (CI)".
-- **DONE (local), unverified in CI**: universal binaries — the release
+- **DONE, verified in CI (2026-09-12)**: universal binaries — the release
   script builds arm64 + x86_64 and `lipo`s them into one artifact,
   `Sequin_<version>_universal.dmg`, so Intel Macs are no longer excluded and
-  neither architecture needs Rosetta. Validated by a local universal build;
-  CI runs the same script but has never executed the cross-compile,
-  `create-dmg` over a fat app, or notarization of a fat binary — the v0.1.0
-  tag is the first real exercise. `cargo check` for x86_64 now runs on every
+  neither architecture needs Rosetta. The v0.1.0 tag run exercised the whole
+  path end to end on CI — cross-compile, `create-dmg` over a fat app, and
+  notarization of a fat binary all succeeded (`slices: x86_64 arm64`,
+  Apple `Accepted`). `cargo check` for x86_64 now runs on every
   PR so a dependency that will not cross-compile fails there, not mid-tag.
 
 ### v2 candidates

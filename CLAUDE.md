@@ -158,16 +158,26 @@ after M2 to capture real tokens.
 
 ## Current state / next work
 
-M1–M4 are DONE and validated: the core flow (group → arrange → write) is
-complete. M5 (polish & release) is nearly done — PR #5 merged the app icon,
-`dx bundle` config, README pitch and `RELEASE.md`, and the macOS build was
-signed + notarized once on 2026-07-20 (keychain profile `sequin-notary`).
-What remains before v0.1.0: a manual smoke test on a real delivery (arrange
-→ write → import `sequin-output/` into Apple Photos → confirm order), a
-rebuild + re-sign + re-notarize (the July `.dmg` is no longer on disk), then
-tag `v0.1.0` and publish the notarized `.dmg` as a GitHub release. The
-scaled-decode golden test that gated this is **done** (2026-09-08, both
-paths pass). See PLAN.md M5.
+M1–M5 are DONE. The core flow (group → arrange → write) is complete and
+validated, and **v0.1.0 is tagged** at `e543bdd` (2026-09-12). The tag run
+built universal (arm64 + x86_64), signed, notarized (Apple `Accepted`),
+stapled and verified, and attached `Sequin_0.1.0_universal.dmg` to a **draft**
+GitHub release.
+
+**The only thing left is publishing that draft**, which is the maintainer's
+call and needs two checks first: a smoke test of *this* build (the
+2026-09-11 one passed but ran against the arm64 build, before the new icon),
+and a look at the icon in Finder and the Dock — this is the first bundle to
+actually carry `Assets.car`, so the first chance to confirm macOS 26 uses the
+layered icon instead of falling back to the `.icns`. README screenshots are
+still outstanding too.
+
+Do not re-tag or publish without being asked. Note the tag was moved once
+already: it sat at `ab85bf1` (pre-icon) and was re-pointed after PR #19, with
+the older draft deleted — neither had ever been published.
+
+The scaled-decode golden test that gated all this is **done** (2026-09-08,
+both paths pass). See PLAN.md M5.
 
 M3/M4 notes: `sequin-core/src/arrange.rs` is the arrangement model
 (reorder, merge, split; serializes to the `arrangement.json` sidecar shared
