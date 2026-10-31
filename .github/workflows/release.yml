@@ -24,11 +24,11 @@ env:
 jobs:
   build:
     name: build · sign · notarize (macOS)
-    # macos-14 is Apple Silicon. The signing path below builds BOTH slices
+    # macos-15 is Apple Silicon. The signing path below builds BOTH slices
     # and lipos them into one universal binary, so the released artifact runs
     # natively on Apple Silicon and on Intel. The unsigned fallback is
     # host-arch only -- it is for testing the build, not for distribution.
-    runs-on: macos-14
+    runs-on: macos-15
     # Gates the signing secrets behind required reviewers -- anyone able to
     # push a v* tag can otherwise aim the Developer ID key at whatever that
     # revision contains. This only holds if the six secrets are stored ON the
